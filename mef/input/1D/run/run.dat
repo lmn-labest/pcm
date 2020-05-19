@@ -1,0 +1,16 @@
+setpnode run/node.dat
+#setpi    pg.dat
+nl 8000 1.d-4 1
+#pgeo
+dt 1.0d+03
+pres
+pnup
+#pnsf
+loop  100
+solv
+pres
+pnup
+#pnsf
+next
+#
+return

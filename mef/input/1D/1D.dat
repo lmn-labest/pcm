@@ -1,0 +1,25 @@
+solver   config/solo1.solver
+config   config/solo1.config
+gravity  config/grav.dat
+setprint config/setprint.dat
+conseq   mat/matprop.dat 
+mesh
+nnode 5 numel 4 ndf 2 numat 1 maxno 3 dim 1
+fmaterials
+1 mat/prop1.dat
+end fmaterials
+insert mesh/exemplo1_mesh0_coor.dat
+insert mesh/exemplo1_mesh0_elem.dat
+constrainpmec
+1  1 0 
+5  0 1
+end constrainpmec
+nodalloads
+5 1 0
+end nodalloads 
+loads
+1 41 run/normal_load.dat
+end loads
+end mesh
+run run/run.dat
+stop

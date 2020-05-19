@@ -1,0 +1,6 @@
+Tempo
+trmetis                         0.00500
+tcomunica                       0.00000
+tpart                           0.00000
+trmesh                          0.02100
+Total                           0.02600

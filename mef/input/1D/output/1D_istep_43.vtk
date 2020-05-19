@@ -1,0 +1,69 @@
+# vtk DataFile Version 3.0
+Malha poro mec                
+ASCII
+DATASET UNSTRUCTURED_GRID
+FIELD FieldData 4
+TIME_S 1 1 double
+    43000.000000
+TIME_H 1 1 double
+       11.944444
+TIME_D 1 1 double
+        0.497685
+CYCLE 1 1 int
+       43
+POINTS          5 double
+    0.00000E+00    0.00000E+00    0.00000E+00
+    0.25000E+00    0.00000E+00    0.00000E+00
+    0.50000E+00    0.00000E+00    0.00000E+00
+    0.75000E+00    0.00000E+00    0.00000E+00
+    0.10000E+01    0.00000E+00    0.00000E+00
+CELLS          4        12
+         2         0         1
+         2         1         2
+         2         2         3
+         2         3         4
+CELL_TYPES          4
+  3
+  3
+  3
+  3
+CELL_DATA         4
+ SCALARS mat             int            1
+LOOKUP_TABLE default
+         1
+         1
+         1
+         1
+ SCALARS elIdG           int            1
+LOOKUP_TABLE default
+         1
+         2
+         3
+         4
+POINT_DATA         5
+SCALARS noIdG            int       1
+LOOKUP_TABLE default
+         1
+         2
+         3
+         4
+         5
+VECTORS desloc          double
+   0.00000E+000   0.00000E+000   0.00000E+000
+  -0.21207E-001   0.00000E+000   0.00000E+000
+  -0.42567E-001   0.00000E+000   0.00000E+000
+  -0.64211E-001   0.00000E+000   0.00000E+000
+  -0.86226E-001   0.00000E+000   0.00000E+000
+SCALARS pressao          double    1
+LOOKUP_TABLE default
+   0.70888E-001
+   0.65492E-001
+   0.50125E-001
+   0.27128E-001
+   0.00000E+000
+VECTORS darcyFlux       double
+   0.23742E-007   0.00000E+000   0.00000E+000
+   0.45678E-007   0.00000E+000   0.00000E+000
+   0.84401E-007   0.00000E+000   0.00000E+000
+   0.11028E-006   0.00000E+000   0.00000E+000
+   0.11936E-006   0.00000E+000   0.00000E+000

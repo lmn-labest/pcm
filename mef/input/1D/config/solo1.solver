@@ -1,0 +1,9 @@
+solver
+name    sqmr
+nkrylov 50
+it      1000
+tol     0.0d+00
+fprint  true
+histlog true
+end
+name    sqmr 

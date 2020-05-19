@@ -1,0 +1,15 @@
+elType       12 
+poisson      0.3369d+00 
+modE         1.688d+01 
+permeability 1.1d-08 
+mbiot        5.91074d+04 
+cbiot        9.989d-01 
+density      1.85d+03 
+fdensity     1.0d+03  
+ivoid        2.57d0  
+l_plastic    0.7397d0 
+k_plastic    0.00d0 
+porosity     0.7d0
+mcs          1.2d0  
+pc0          2.8d0
+end 
