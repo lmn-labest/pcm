@@ -67,7 +67,7 @@ c
 c ... Variaveis descritivas do problema:
 c
       integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndm,nst
-      logical fporomec,fmec,fterm,fplastic,fcoo
+      logical fporomec,fplastic,fcoo
 c ......................................................................
 c
 c ... Variaveis do sistema de equacoes:
@@ -231,8 +231,7 @@ c ... fluxo de calor  (13)
       print_flag(12)= .false. 
       print_flag(13)= .false. 
 c ... tipo do problema
-c ... fporomec  = problema poromecanico                    
-c ... fmec      = problema mecanico              
+c ... fporomec  = problema poromecanico                              
 c ... fplastic  = plasticidade
 c ... vprop     = propriedades variaveis
 c             1 - prop por pontos de integracao (true|false)                          
@@ -240,7 +239,6 @@ c             2 - konzey-Caraman                (true|false)
 c             3 - mecanico                      (true|false)                          
 c             4 - massa especifica              (true|false)                          
       fporomec   = .false.
-      fmec       = .false.
       fplastic   = .false.
       vprop(1)   = .false.
       vprop(2)   = .false.
@@ -429,8 +427,8 @@ c ......................................................................
      1     ,400 , 500, 600 !'        ','dt      ','pgeo    '
      2     ,700 , 800, 900 !'        ','block_pu','gravity '
      3     ,1000,1100,1200 !'conseq  ','solver  ','deltatc '
-     4     ,1300,1400,1500 !'pcoo    ','pcolors ','        '
-     5     ,1600,1700,1800 !'pres    ','        ','solvm   '
+     4     ,1300,1400,1500 !'        ','        ','        '
+     5     ,1600,1700,1800 !'        ','        ','solvm   '
      6     ,1900,2000,2100 !'        ','        ','        '
      7     ,2200,2300,2400 !'        ','        ','        '
      8     ,2500,2600,2700 !'        ','nl      ','        '
@@ -493,7 +491,7 @@ c
       flag_macro_mesh = .true.
 c
 c.... Leitura de dados:
-      call rdat_pm(nnode    ,nnodev   ,numel      ,numat  
+      call rdat_pcm(nnode    ,nnodev   ,numel      ,numat  
      1         ,nen         ,nenv     ,ntn        ,ndf
      2         ,ndm         ,nst      ,i_ix       ,i_ie   
      3         ,i_inum      ,i_e      ,i_x        ,i_id  
@@ -502,7 +500,7 @@ c.... Leitura de dados:
      6         ,i_v 
      7         ,i_tx1p      ,i_tx2p   ,i_depsp    ,i_plastic
      8         ,i_porosity  ,i_fnno   ,i_elplastic,i_vpropel
-     9         ,fstress0    ,fporomec ,fmec       ,fterm       
+     9         ,fstress0    ,fporomec        
      1         ,print_flag(1),fplastic,vprop      ,nin)
 c    -----------------------------------------------------------------
 c    | ix | id | ie | nload | eload | eloadp| inum | e | x | f | u | 
@@ -539,13 +537,6 @@ c ... estrutura de dados para o bloclo iterativo pcg (poro_mec)
         n_blocks_pu  = 3
       endif
 c .....................................................................
-c 
-c ... desabilita o csrc blocado em problemas mecanicos
-      if(fmec) then
-        block_pu        = .false. 
-        block_pu_sym    = .false. 
-        n_blocks_pu     = 0 
-      endif
 c ......................................................................   
 c
 c ... desabilita a impressao da pressao de consolidacao no problemas 
@@ -601,15 +592,8 @@ c
 c ... Numeracao nodal das equacoes:
 c
       timei = MPI_Wtime()
-c ... mecanico
-      if(fmec .or. fterm) then
-        call numeq(ia(i_id),ia(i_inum),ia(i_id),nnode,ndf,neq)
-          nequ = 0
-          neqp = 0
-c ......................................................................
-c
 c ... poro mecanico
-      else if(fporomec) then
+      if(fporomec) then
 c ... primero numera os deslocamento e depois as pressoes
         if(block_pu .or. block_pu_sym) then
           call numeqpmec1(ia(i_id),ia(i_inum),ia(i_id),ia(i_fnno),
@@ -651,43 +635,8 @@ c                     ----------------------------
 c                     | fmap0i | rcvs0i | dspl0i |
 c                     ----------------------------                    
 c ......................................................................
-c
-c.... Arranjos locais de elemento:
-c
-c ... mecanico
-      if(fmec) then
-        i_xl  = alloc_8('xl      ',ndm,nenv)
-        i_ul  = alloc_8('ul      ',1  ,nst)
-        i_pl  = alloc_8('pl      ',1  ,nst)
-c ...      
-        i_txnl= alloc_8('txnl    ',  6,nen)
-c ...      
-        i_sl  = alloc_8('sl      ',nst,nst)
-        i_ld  = alloc_4('ld      ',  1,nst)
-c .....................................................................
-c
-c     -----------------------------------------
-c     | xl | ul | pl | sl | ld |
-c     -----------------------------------------
-c
-c ... termico
-      else if(fterm) then
-        i_xl  = alloc_8('xl      ',ndm,nenv)
-        i_ul  = alloc_8('ul      ',1  ,nst)
-        i_pl  = alloc_8('pl      ',1  ,nst)
-        i_vl  = alloc_8('vl      ',1  ,nst)
-c ...      
-        i_sl  = alloc_8('sl      ',nst,nst)
-        i_ld  = alloc_4('ld      ',  1,nst)
-c .....................................................................
-c
-c     -----------------------------------------
-c     | xl | ul | pl | sl | ld |
-c     -----------------------------------------
-c .....................................................................
-c
 c ... poro mecanico
-      else if(fporomec) then
+      if(fporomec) then
         i_xl  = alloc_8('xl      ',ndm,nenv)
         i_ul  = alloc_8('ul      ',1  ,nst)
         i_dpl = alloc_8('dpl     ',1  ,nenv)
@@ -747,20 +696,6 @@ c ... poromecanico
      5                     ,sia  ,sja ,sau   ,sal ,sad    
      6                     ,ovlp ,n_blocks_pu,block_pu ,block_pu_sym) 
 c .....................................................................
-c
-c ... mec
-      else if(fmec .or. fterm) then
-         sia = 'ia' 
-         sja = 'ja' 
-         sau = 'au' 
-         sal = 'al' 
-         sad = 'ad'  
-         call datastruct(ia(i_ix),ia(i_id),ia(i_inum),nnode
-     1                  ,numel   ,nen     ,ndf       ,nst
-     2                  ,neq     ,stge    ,unsym     ,nad  ,nadr
-     3                  ,i_ia    ,i_ja    ,i_au      ,i_al ,i_ad 
-     4                  ,sia     ,sja     ,sau       ,sal  ,sad         
-     5                  ,ovlp     )
       endif
       dstime = MPI_Wtime()-timei
 c
@@ -1004,7 +939,7 @@ c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
      3         ,ia(i_m) ,ia(i_b) ,ia(i_x0)   ,solvtol,maxit
      4         ,ngram   ,block_pu,n_blocks_pu,solver,istep
      5         ,cmaxit  ,ctol    ,alfap      ,alfau ,precond
-     6         ,fmec    ,fporomec,fterm      ,fhist_log  ,fprint 
+     6         ,.false. ,fporomec,.false.     ,fhist_log  ,fprint 
      7         ,neqf1   ,neqf2   ,neq3       ,neq4  ,neq_dot
      8         ,i_fmap  ,i_xf    ,i_rcvs     ,i_dspl)
       soltime = soltime + MPI_Wtime()-timei
@@ -1294,18 +1229,11 @@ c ......................................................................
       goto 50     
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: PCOLOR escreve a malha colorida
+c ... Macro-comando: None
 c
 c ......................................................................
  1400 continue
-      if(my_id.eq.0) then
-        print*, 'Macro PCOLOR'
-        call write_mesh_color(ia(i_ix)    ,ia(i_x)      
-     1                      ,ia(i_colorg),ia(i_elcolor) ,numcolors  
-     2                      ,nnode       ,numel         ,nen  ,ndm    
-     4                      ,fname       ,prename
-     5                      ,bvtk        ,legacy_vtk, nplot)
-      endif
+      if(my_id.eq.0) print*, 'Macro None'
       goto 50
 c ......................................................................
 c
@@ -2104,8 +2032,8 @@ c ... arquivo de tempo
      2                   ,neq32    ,neq4    ,neq1a    ,neqf1   ,neqf2 
      3                   ,nad      ,naduu   ,nadpp    ,nadpu   ,nadr
      4                   ,omp_elmt ,nth_elmt,omp_solv ,nth_solv
-     5                   ,fporomec ,fmec    ,fterm    ,numcolors
-     6                   ,prename ,my_id    ,nprcs   ,nout)
+     5                   ,fporomec ,.false. ,.false.  ,numcolors
+     6                   ,prename  ,my_id   ,nprcs    ,nout)
 c .....................................................................
 c
 c ... media do tempo mpi 
@@ -2113,7 +2041,7 @@ c ... media do tempo mpi
         call mpi_log_mean_time(nnovG,nnoG,nelG
      1                        ,omp_elmt ,nth_elmt
      2                        ,omp_solv ,nth_solv
-     3                        ,fporomec ,fmec 
+     3                        ,fporomec ,.false.
      4                        ,numcolors,prename
      5                        ,my_id    ,nprcs   ,nout)
       endif
