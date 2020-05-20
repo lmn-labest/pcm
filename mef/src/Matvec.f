@@ -222,7 +222,7 @@ c **********************************************************************
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Loop nas linhas:
 c
@@ -252,7 +252,7 @@ c ...    Armazena o resultado em y(i):
 c
          y(i) = t
   110 continue
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c ......................................................................
 c
 c ... Comunicacao do vetor y no sistema non-overlapping:
@@ -306,7 +306,7 @@ c **********************************************************************
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Loop nas linhas:
 c
@@ -335,7 +335,7 @@ c ...    Armazena o resultado em y(i):
 c
          y(i) = t
   110 continue
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c ......................................................................
 c
 c ... Comunicacao do vetor y no sistema non-overlapping:
@@ -394,7 +394,7 @@ c ... Comunicacao do vetor x no sistema overlapping:
 c
       call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Loop nas linhas:
 c
@@ -432,7 +432,7 @@ c ...    Armazena o resultado em y(i):
 c
          y(i) = t
   200 continue
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c ......................................................................
       return
       end
@@ -484,7 +484,7 @@ c
 c ... Comunicacao do vetor x no sistema overlapping:
       call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Loop nas linhas:
 c
@@ -522,7 +522,7 @@ c
          y(i) = t         
   200 continue
 c ......................................................................
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
       return
       end              
       subroutine matvec_csrc1(neq,ia,ja,dum0,dum1,ad,al,au,dum2,x,y,
@@ -571,7 +571,7 @@ c **********************************************************************
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Loop nas linhas:
 c
@@ -606,7 +606,7 @@ c
   120    y(i) = t
 c ----------------------------------------------------------------------
   300 continue
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c ......................................................................
 c
 c ... Comunicacao do vetor y no sistema non-overlapping:
@@ -662,7 +662,7 @@ c **********************************************************************
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Loop nas linhas:
 c
@@ -1725,12 +1725,12 @@ c **********************************************************************
       integer n,i,k
       real*8  a(*),b(*),tmp
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
       tmp = 0.d0
       do 100 i = 1, neq_doti
          tmp = tmp + a(i)*b(i)
   100 continue
-      dottime = dottime + MPI_Wtime() - time0
+      dottime = dottime + get_time() - time0
 c ......................................................................
       if (nprcs .gt. 1) then
          call MPI_ALLREDUCE(tmp,dot_par,1,MPI_DOUBLE_PRECISION,

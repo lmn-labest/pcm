@@ -87,13 +87,13 @@ c ......................................................................
 c
 c ... Comunicacao de vetores
 c
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Preenche buffer de envio:
       call mapfront(x,ia(i_xf+2*neqf1),ia(i_fmap+neqf1),neqf2)
-      ovhtime = ovhtime + MPI_Wtime()-time0
+      ovhtime = ovhtime + get_time()-time0
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Envia dados do ciclo atual:
 c
@@ -115,16 +115,16 @@ c ...    envia para o k-esimo vizinho:
 c
 c ... Aguarda recebimento dos dados:
       call MPI_waitall(nviz1,ia(i_rreqs),status,ierr)
-      sendtime = sendtime + MPI_Wtime() - time0
+      sendtime = sendtime + get_time() - time0
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Recupera valores recebidos:
       call maploc(x,ia(i_xf),ia(i_fmap),neqf1,ovlp)
 c
 c ... Libera requests dos Isend:
       call MPI_waitall(nviz2,ia(i_sreqs),status,ierr)
-      ovhtime = ovhtime + MPI_Wtime()-time0
+      ovhtime = ovhtime + get_time()-time0
 c ......................................................................
       return
       end

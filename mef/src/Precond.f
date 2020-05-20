@@ -443,7 +443,7 @@ c ...
 c .....................................................................
 c
 c ...
-      prebdiagtime = Mpi_Wtime() - prebdiagtime
+      prebdiagtime = get_time() - prebdiagtime
 c .....................................................................
 c
 c
@@ -544,7 +544,7 @@ c
 c .....................................................................
 c
 c ...
-      prebdiagtime = Mpi_Wtime() - prebdiagtime
+      prebdiagtime = get_time() - prebdiagtime
 c .....................................................................
 c ... 
 c     do i = 1, 13176
@@ -968,7 +968,7 @@ c **********************************************************************
 c ......................................................................
 c
 c ...
-      ifatsolvtime = Mpi_Wtime() - ifatsolvtime
+      ifatsolvtime = get_time() - ifatsolvtime
       x(1:n) = b(1:n)
 c ......................................................................
 c
@@ -997,7 +997,7 @@ c ... Backward substitution: Ltx = z
   200   continue
   210 continue
 c ......................................................................
-      ifatsolvtime = Mpi_Wtime() - ifatsolvtime    
+      ifatsolvtime = get_time() - ifatsolvtime    
       return
       end
 c **********************************************************************
@@ -1037,7 +1037,7 @@ c **********************************************************************
 c ......................................................................
 c
 c ...
-      ifatsolvtime = Mpi_Wtime() - ifatsolvtime
+      ifatsolvtime = get_time() - ifatsolvtime
       x(1:n) = b(1:n)
 c ......................................................................
 c
@@ -1063,7 +1063,7 @@ c ... Backward substitution: Lt x = y
         x(i-1) = x(i-1)*ad(i-1)
   210 continue
 c ......................................................................
-      ifatsolvtime = Mpi_Wtime() - ifatsolvtime    
+      ifatsolvtime = get_time() - ifatsolvtime    
       return
       end
 c **********************************************************************
@@ -1625,7 +1625,7 @@ c .....................................................................
 c
 c ... precondicionador diagonal:
       else if(precond .eq. 2) then 
-        precondtime = Mpi_Wtime() - precondtime  
+        precondtime = get_time() - precondtime  
 c ...    precondicionador diagonal:
         call aequalb(m,ad,neq) 
 c ...    Comunicacao da diagonal para o caso non-overlapping:
@@ -1635,23 +1635,23 @@ c .....................................................................
 c
 c ...
         call pre_diag(m,m,neq,.false.)  
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
 c .....................................................................
 c
 c ... precondicionador LDLT incompleto
       else if(precond .eq. 3) then
 c ...
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
         call ildlt2(neq,ia,ja,al,ad,m,w,0.0d0,.false.)
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
 c .....................................................................
 c
 c ... precondicionador Cholesky LLT incompleto
       else if(precond .eq. 4) then
 c ...
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
         call ichfat(neq,ia,ja,al,ad,m,w,0.0d0,.true.)
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
 c .....................................................................
 c
 c ... precondicionador modulo da diagonal:
@@ -1662,25 +1662,25 @@ c ...    Comunicacao da diagonal para o caso non-overlapping:
         if (novlp) call communicate(m,neqf1i,neqf2i,i_fmapi,i_xfi
      .                             ,i_rcvsi,i_dspli)
 c .....................................................................
-        precondtime = Mpi_Wtime() - precondtime  
+        precondtime = get_time() - precondtime  
         call pre_diag(m,m,neq,.true.)
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
 c .....................................................................
 c
 c ... precondicionador bloco diagonal:
       else if(precond .eq. 6) then
 c ...
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
         call block_precond(ad,al,ia,ja,m,neq,max_block_a,iparam) 
-        precondtime = Mpi_Wtime() - precondtime
+        precondtime = get_time() - precondtime
 c .....................................................................
 c
 c ... precondicionador diagonal com complemento de schur:
       else if(precond .eq. 7) then
 c ...
-        precondtime = Mpi_Wtime() - precondtime  
+        precondtime = get_time() - precondtime  
         call pre_diag_schur(ia,ja,m,ad,al,w,neq,nequ)
-        precondtime = Mpi_Wtime() - precondtime 
+        precondtime = get_time() - precondtime 
 c .....................................................................
 c
 c ...

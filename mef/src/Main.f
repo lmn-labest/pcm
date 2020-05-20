@@ -568,18 +568,18 @@ c
       prebdiagtime = 0.d0
       tinitbuffer  = 0.d0
       tacbuffer    = 0.0d0
-      totaltime    = MPI_Wtime()
+      totaltime    = get_time()
 c ......................................................................      
 c
 c.... Otimizacao da largura de banda:
 c
-      timei = MPI_Wtime()
+      timei = get_time()
       if (mpi) then
        call reord(ia(i_ix),ia(i_inum),nno1-nno1a,nnode,numel,nen,reordf)
       else
        call reord(ia(i_ix),ia(i_inum),nnode,nnode,numel,nen,reordf)
       endif
-      reordtime = MPI_Wtime()-timei
+      reordtime = get_time()-timei
 c ......................................................................
 c
 c ... calcula o numero de equacoes
@@ -591,7 +591,7 @@ c ......................................................................
 c
 c ... Numeracao nodal das equacoes:
 c
-      timei = MPI_Wtime()
+      timei = get_time()
 c ... poro mecanico
       if(fporomec) then
 c ... primero numera os deslocamento e depois as pressoes
@@ -607,11 +607,11 @@ c ... numera os deslocamento e pressoes ao mesmo tempo
         endif
       endif
 c ......................................................................
-      numeqtime = MPI_Wtime()-timei
+      numeqtime = get_time()-timei
 c ......................................................................
 c
 c ... Front Mpi
-      timei = MPI_Wtime()
+      timei = get_time()
       call init_front(i_noLG,i_noGL,nno1,nno2,nno3,nnofi
      1                ,nno_pload
      2                ,nnovG,nnoG,nelG,nnodev,nnode
@@ -626,7 +626,7 @@ c
      2                ,neq_dot
      3                ,i_fmap,i_rcvs,i_dspl,i_xf
      4                ,'fmap     ','rcvs    ','dspl    ','xf      ',0)
-      frontime = MPI_Wtime()-timei
+      frontime = get_time()-timei
 c -------------------------------------------------------------------
 c | noLG | noGL | elLG | fmap | rcvs | dspl | fmapt | rcvst | dsplt |
 c -------------------------------------------------------------------
@@ -680,7 +680,7 @@ c     ---------------------------------------------
 c
 c ... -emoria para a estrutura de dados do sistema de equacoes:
 c
-      timei = MPI_Wtime()
+      timei = get_time()
 c ... poromecanico
       if (fporomec) then
          sia = 'ia' 
@@ -697,14 +697,14 @@ c ... poromecanico
      6                     ,ovlp ,n_blocks_pu,block_pu ,block_pu_sym) 
 c .....................................................................
       endif
-      dstime = MPI_Wtime()-timei
+      dstime = get_time()-timei
 c
 c ... colorir a malha (openmp)
 c
-      colortime = MPI_Wtime()
+      colortime = get_time()
       call coloredmesh(ia(i_ix),nnode,nnodev,numel,nenv,nen,numcolors
      .               ,i_colorg,i_elcolor)     
-      colortime = MPI_Wtime()-colortime
+      colortime = get_time()-colortime
 c ......................................................................
 c
 c ......................................................................
@@ -773,7 +773,7 @@ c .....................................................................
 c
 c ...
       if(fstress0 .and. fcstress0) then
-        timei = MPI_Wtime()
+        timei = get_time()
         call initial_stress(ia(i_ix)     ,ia(i_ie)  ,ia(i_e)  
      1       ,ia(i_x)     ,ia(i_id)      ,ia(i_bst0) 
      2       ,ia(i_u0)    ,ia(i_tx1p)    ,ia(i_tx0) ,ia(i_dp)
@@ -783,7 +783,7 @@ c ...
      6       ,ndm         ,nst           ,npi      ,ntn
      7       ,neq         ,stge          ,ilib      
      8       ,block_pu    ,fplastic)
-        elmtime = elmtime + MPI_Wtime()-timei
+        elmtime = elmtime + get_time()-timei
 c ... inicializa as tensoes tx1p -> tx2p
         if(fplastic) then 
           call aequalb(ia(i_tx2p),ia(i_tx1p),ntn*npi*numel) 
@@ -830,16 +830,16 @@ c ...
 c .....................................................................
 c
 c ... Cargas nodais e valores prescritos no tempo t+dt:
-      timei = MPI_Wtime()
+      timei = get_time()
       call pload_pm(ia(i_id)  ,ia(i_x) ,ia(i_f)
      1             ,ia(i_u)   ,ia(i_b0),ia(i_nload)
      2             ,ia(i_fnno),nnode   ,ndf,ndm)
-      vectime = vectime + MPI_Wtime()-timei
+      vectime = vectime + get_time()-timei
 c .....................................................................   
 c
 c ... forcas de volume e superficie do tempo t+dt e graus de liberade 
 c     do passo t:  
-      timei = MPI_Wtime()
+      timei = get_time()
       call pform_pm(ia(i_ix)  ,ia(i_eload) ,ia(i_eloadp)
      1           ,ia(i_ie)    ,ia(i_e) 
      2           ,ia(i_x)     ,ia(i_id)   ,ia(i_ia)  ,ia(i_ja) 
@@ -859,7 +859,7 @@ c     do passo t:
      7           ,stge        ,4          ,ilib     ,i
      8           ,ia(i_colorg),ia(i_elcolor),numcolors
      9           ,block_pu    ,n_blocks_pu  ,fplastic,vprop)
-      elmtime = elmtime + MPI_Wtime()-timei
+      elmtime = elmtime + get_time()-timei
 c .....................................................................
 c
 c ... tensao inicial elastico
@@ -869,9 +869,9 @@ c ... tensao inicial elastico
 c .....................................................................
 c
 c ... Preditor: du(n+1,0) = u(n+1) - u(n)  
-      timei = MPI_Wtime()
+      timei = get_time()
       call delta_predict_pm(nnode,ndf,ia(i_u),ia(i_u0),ia(i_fnno))
-      vectime = vectime + MPI_Wtime()-timei
+      vectime = vectime + get_time()-timei
 c .....................................................................
 c
 c ---------------------------------------------------------------------
@@ -880,9 +880,9 @@ c ---------------------------------------------------------------------
       lhs = .true.  
   410 continue
 c ...
-      timei = MPI_Wtime()
+      timei = get_time()
       call aequalb(ia(i_b),ia(i_b0),neq)
-      vectime = vectime + MPI_Wtime()-timei
+      vectime = vectime + get_time()-timei
 c .....................................................................
 c      
 c ... Residuo:
@@ -892,7 +892,7 @@ c              bp = Fp - K.dp(n+1,i)
 c ... elastic
 c              Fu = Fu - K.du(n+1,i)
 c              bp = Fp - K.dp(n+1,i)
-      timei = MPI_Wtime()
+      timei = get_time()
       call pform_pm(ia(i_ix),ia(i_eload) ,ia(i_eloadp)  
      1         ,ia(i_ie)    ,ia(i_e)
      2         ,ia(i_x)     ,ia(i_id)    ,ia(i_ia)  ,ia(i_ja)
@@ -912,7 +912,7 @@ c              bp = Fp - K.dp(n+1,i)
      7         ,stge        ,2           ,ilib     ,i
      8         ,ia(i_colorg),ia(i_elcolor),numcolors
      9         ,block_pu    ,n_blocks_pu  ,fplastic,vprop)
-      elmtime = elmtime + MPI_Wtime()-timei
+      elmtime = elmtime + get_time()-timei
 c .....................................................................
 c
 c ... Comunicacao do residuo para o caso non-overlapping:
@@ -932,7 +932,7 @@ c ...
 c ......................................................................            
 c
 c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
-      timei = MPI_Wtime()
+      timei = get_time()
       call solv_pm(neq  ,nequ    ,neqp  
      1         ,nad     ,naduu   ,nadpp      
      2         ,ia(i_ia),ia(i_ja),ia(i_ad)   ,ia(i_al)
@@ -942,20 +942,20 @@ c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
      6         ,.false. ,fporomec,.false.     ,fhist_log  ,fprint 
      7         ,neqf1   ,neqf2   ,neq3       ,neq4  ,neq_dot
      8         ,i_fmap  ,i_xf    ,i_rcvs     ,i_dspl)
-      soltime = soltime + MPI_Wtime()-timei
+      soltime = soltime + get_time()-timei
 c .....................................................................
 c
 c ... atualizacao :      du(n+1,i+1) = du(n+1,i)      + dv(n+1,i+1)
-      timei = MPI_Wtime()
+      timei = get_time()
       call delta_update_pm(nnode   ,ndf
      1                    ,ia(i_id),ia(i_u)
      2                    ,ia(i_x0),ia(i_fnno))
-      vectime = vectime + MPI_Wtime()-timei
+      vectime = vectime + get_time()-timei
 c .....................................................................
 c
 c ... atualizacao da propriedades nos pontos de integracao sem atualizar
 c     as porosidades
-      timei = MPI_Wtime()
+      timei = get_time()
       if(vprop(1) .and. newton_raphson) then
         call update_prop(ia(i_ix),ia(i_x),ia(i_e),ia(i_ie),ia(i_vpropel)
      1                  ,ia(i_u) ,ia(i_plastic)
@@ -964,7 +964,7 @@ c     as porosidades
      4                  ,ndm  ,ndf ,nst      ,npi 
      5                  ,10   ,ilib,fplastic,vprop,.false.)
       endif
-      upproptime = upproptime + MPI_Wtime()-timei
+      upproptime = upproptime + get_time()-timei
 c ....................................................................
 c
 c ...
@@ -1003,7 +1003,7 @@ c ...
   420 continue
 c ... atualizacao da propriedades nos pontos de integracao e as
 c     porosidades
-      timei = MPI_Wtime()
+      timei = get_time()
       if(vprop(1)) then
         call update_prop(ia(i_ix),ia(i_x),ia(i_e),ia(i_ie),ia(i_vpropel)
      1                  ,ia(i_u) ,ia(i_plastic)
@@ -1012,7 +1012,7 @@ c     porosidades
      4                  ,ndm  ,ndf ,nst     ,npi 
      5                  ,10   ,ilib,fplastic,vprop,.true.)
       endif
-      upproptime = upproptime + MPI_Wtime()-timei
+      upproptime = upproptime + get_time()-timei
 c ....................................................................
 c
 c ... calculo da porosidade nodal
@@ -1035,7 +1035,7 @@ c     passo de tempo anterior:
 c     u(n+1)  = u(n) + du(n+1) 
 c     u(n)    = u(n+1) 
 c     dp(n+1) = p(n) - p(0)
-      timei = MPI_Wtime()
+      timei = get_time()
 c     call update_res(nnode  ,nnodev  ,ndf
 c    .               ,ia(i_u),ia(i_u0),ia(i_dp),ia(i_pres0))
       call update_res_v2(nnode   ,ndf
@@ -1053,7 +1053,7 @@ c     do passo de tempo anterior 1 -> 2
      .                     ,nen,npi,numel,vprop)
       endif
 c .....................................................................
-      vectime = vectime + MPI_Wtime()-timei
+      vectime = vectime + get_time()-timei
 c .....................................................................
       goto 50 
 c ----------------------------------------------------------------------
@@ -1088,7 +1088,7 @@ c .....................................................................
 c
 c ... Geometria:
       if(mpi) then       
-        writetime = writetime + MPI_Wtime()-timei 
+        writetime = writetime + get_time()-timei 
         call global_ix(nen+1,numel_nov,i_ix,i_g,'ixg     ')
         call global_v(ndm   ,nno_pload,i_x ,i_g1,'xg      ')
 c .....................................................................
@@ -1105,13 +1105,13 @@ c
 c ...        
         i_g1 = dealloc('xg      ')
         i_g  = dealloc('ixg     ')
-        writetime = writetime + MPI_Wtime()-timei
+        writetime = writetime + get_time()-timei
 c ......................................................................
 c
 c ...
       else
         print*, 'Macro PGEO'
-        writetime = writetime + MPI_Wtime()-timei 
+        writetime = writetime + get_time()-timei 
         if(fporomec) then
           call write_mesh_geo_pm(ia(i_ix)   ,ia(i_x)    ,ia(i_ie)
      1                        ,ia(i_id)     ,ia(i_f)    ,ia(i_u) 
@@ -1126,7 +1126,7 @@ c ...
      1                       ,nen        ,ndm     ,prename,bvtk
      2                       ,legacy_vtk ,nplot)
         endif
-        writetime = writetime + MPI_Wtime()-timei
+        writetime = writetime + get_time()-timei
       endif
 c .....................................................................
       goto 50
@@ -1295,7 +1295,7 @@ c ...
 c ...
         if(print_flag(5) .or. print_flag(6) .or. print_flag(7) 
      .     .or. print_flag(8)) then
-          timei = MPI_Wtime()
+          timei = get_time()
           call tform_pm(ia(i_ix)   ,ia(i_x)  ,ia(i_e)  ,ia(i_ie)
      1        ,ia(i_ic)   ,ia(i_xl) ,ia(i_ul),ia(i_dpl),ia(i_tx1pl)
      2        ,ia(i_vpropell) 
@@ -1304,20 +1304,20 @@ c ...
      5        ,nnode      ,numel   ,nen       ,nenv
      6        ,ndm        ,ndf     ,nst       ,ntn  ,npi 
      7        ,3          ,ilib    ,i_xf      ,novlp,fplastic,vprop)
-          tformtime = tformtime + MPI_Wtime()-timei
+          tformtime = tformtime + get_time()-timei
         endif
 c ......................................................................
 c
 c ...
         if(print_flag(10))then
-          timei = MPI_Wtime()
+          timei = get_time()
           call consolidation_pressure(ia(i_ix),ia(i_ie),ia(i_ic)
      1                    ,ia(i_plasticl)    ,ia(i_pl) 
      2                    ,ia(i_pc)          ,ia(i_plastic),ia(i_fnno)  
      3                    ,nnode      ,numel  ,nen      ,nenv
      4                    ,ndm        ,ndf    ,nst      ,npi
      5                    ,8          ,ilib   ,i_xf     ,novlp)
-          tformtime = tformtime + MPI_Wtime()-timei
+          tformtime = tformtime + get_time()-timei
         endif
 c ......................................................................
 c
@@ -1415,7 +1415,7 @@ c ...
 c ...
         if( print_flag(5) .or. print_flag(6) .or. print_flag(7) 
      .     .or. print_flag(8)) then
-          timei = MPI_Wtime()
+          timei = get_time()
           call tform_pm(ia(i_ix)   ,ia(i_x)    ,ia(i_e)  ,ia(i_ie)
      1       ,ia(i_ic)   ,ia(i_xl)  ,ia(i_ul)  ,ia(i_dpl),ia(i_tx1pl)
      2       ,ia(i_vpropell) 
@@ -1424,7 +1424,7 @@ c ...
      5       ,nnode      ,numel     ,nen       ,nenv
      6       ,ndm        ,ndf       ,nst       ,ntn  ,npi 
      7       ,3          ,ilib      ,i_xf      ,novlp,fplastic,vprop)
-          tformtime = tformtime + MPI_Wtime()-timei
+          tformtime = tformtime + get_time()-timei
 c ......................................................................
 c
 c ... add tensao inicial
@@ -1440,14 +1440,14 @@ c ......................................................................
 c
 c ...
         if(print_flag(10))then
-          timei = MPI_Wtime()
+          timei = get_time()
           call consolidation_pressure(ia(i_ix),ia(i_ie),ia(i_ic)
      1                    ,ia(i_plasticl)    ,ia(i_pl) 
      2                    ,ia(i_pc)          ,ia(i_plastic),ia(i_fnno)  
      3                    ,nnode      ,numel  ,nen      ,nenv
      4                    ,ndm        ,ndf    ,nst      ,npi
      5                    ,8          ,ilib   ,i_xf     ,novlp)
-          tformtime = tformtime + MPI_Wtime()-timei
+          tformtime = tformtime + get_time()-timei
         endif
 c ......................................................................
 c
@@ -1782,7 +1782,7 @@ c ... calculo da tensoes, tensoes efetivas e fluxo de darcy nos vertices.
 c .....................................................................
 c
 c ...
-      timei = MPI_Wtime()
+      timei = get_time()
       call tform_pm(ia(i_ix)   ,ia(i_x)  ,ia(i_e)   ,ia(i_ie)
      1        ,ia(i_ic)   ,ia(i_xl) ,ia(i_ul)  ,ia(i_dpl),ia(i_tx1pl)
      2        ,ia(i_vpropell) 
@@ -1791,7 +1791,7 @@ c ...
      5        ,nnode      ,numel   ,nen        ,nenv
      6        ,ndm        ,ndf     ,nst        ,ntn   ,npi
      7        ,3          ,ilib    ,i_xf       ,novlp,fplastic,vprop)
-      tformtime = tformtime + MPI_Wtime()-timei
+      tformtime = tformtime + get_time()-timei
 c ......................................................................
 c
 c ... comunicao
@@ -2024,7 +2024,7 @@ c ... fecha arquivo extra dp log do solv block_pcg_it
 c .....................................................................
 c
 c ...
-      totaltime = MPI_Wtime() - totaltime
+      totaltime = get_time() - totaltime
 c
 c ... arquivo de tempo      
       call write_log_file(nnode    ,numel   ,numel_nov,numel_ov,ndf 

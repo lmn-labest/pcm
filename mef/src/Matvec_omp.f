@@ -70,7 +70,7 @@ c ... ponteiros
       real*8  thread_y(*)
 c ......................................................................
 c$omp single
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c$omp end single
 !$    thread_id = omp_get_thread_num() + 1
       do i = 1, nth_solv
@@ -108,7 +108,7 @@ c$omp do
 c$omp end do
       end do
 c$omp single
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c ......................................................................
 c
 c ... Comunicacao do vetor y no sistema non-overlapping:
@@ -169,7 +169,7 @@ c ... ponteiros
       real*8  thread_y(*)
 c ......................................................................
 c$omp single
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c$omp end single
 !$    thread_id = omp_get_thread_num() + 1
       do i = 1, nth_solv
@@ -208,7 +208,7 @@ c$omp do
 c$omp end do
       end do
 c$omp single
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
       if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
      .                            i_dspli)
 c$omp end single
@@ -269,7 +269,7 @@ c
 c ... Comunicacao do vetor x no sistema overlapping:
       call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c$omp end single
 !$    thread_id = omp_get_thread_num() + 1
       do i = 1, nth_solv
@@ -313,7 +313,7 @@ c$omp end do
       end do
 c$omp single
 c ......................................................................
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c$omp end single
       return
       end
@@ -372,7 +372,7 @@ c ... Comunicacao do vetor x no sistema overlapping:
 c
       call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c$omp end single
 !$    thread_id = omp_get_thread_num() + 1
       do i = 1, nth_solv
@@ -416,7 +416,7 @@ c$omp do
 c$omp end do
       end do
 c$omp single
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c$omp end single
 c ......................................................................
       return
@@ -478,7 +478,7 @@ c ... ponteiros
       real*8  thread_y(*)
 c ......................................................................
 c$omp single
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c$omp end single
 
 c ... inicializando thread_y(i) 
@@ -495,7 +495,7 @@ c .....................................................................
 c
 c ...
 c$omp single
-      tinitbuffer = tinitbuffer + MPI_Wtime() - time0
+      tinitbuffer = tinitbuffer + get_time() - time0
 c$omp end single
 c .....................................................................
 c
@@ -520,7 +520,7 @@ c .....................................................................
 c
 c ...
 c$omp single
-      time1 = MPI_Wtime()
+      time1 = get_time()
 c$omp end single
 c .....................................................................
 c
@@ -535,9 +535,9 @@ c$omp do
 c$omp end do
       end do
 c$omp single
-      tacbuffer = tacbuffer + MPI_Wtime() - time1
+      tacbuffer = tacbuffer + get_time() - time1
 c
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c
       if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
      .                            i_dspli)
@@ -605,7 +605,7 @@ c ... ponteiros
       real*8  thread_y(*)
 c ......................................................................
 c$omp single
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c
 c ... Comunicacao do vetor x no sistema overlapping:
 c
@@ -627,7 +627,7 @@ c .....................................................................
 c
 c ...
 c$omp single
-      tinitbuffer = tinitbuffer + MPI_Wtime() - time0
+      tinitbuffer = tinitbuffer + get_time() - time0
 c$omp end single
 c .....................................................................
 c
@@ -657,7 +657,7 @@ c .....................................................................
 c
 c ...
 c$omp single
-      time1 = MPI_Wtime()
+      time1 = get_time()
 c$omp end single
 c .....................................................................
 c
@@ -672,9 +672,9 @@ c$omp do
 c$omp end do
       end do
 c$omp single
-      tacbuffer = tacbuffer + MPI_Wtime() - time1
+      tacbuffer = tacbuffer + get_time() - time1
 c
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c$omp end single
 c ......................................................................
       return
@@ -736,7 +736,7 @@ c ... ponteiros
       real*8  thread_y(*)
 c ......................................................................
 c$omp single
-      time0 = MPI_Wtime()
+      time0 = get_time()
 c$omp end single
 c .....................................................................
 c
@@ -754,7 +754,7 @@ c .....................................................................
 c
 c ...
 c$omp single
-      tinitbuffer = tinitbuffer + MPI_Wtime() - time0
+      tinitbuffer = tinitbuffer + get_time() - time0
 c$omp end single
 c .....................................................................
 c
@@ -796,7 +796,7 @@ c .....................................................................
 c
 c ...
 c$omp single
-      time1 = MPI_Wtime()
+      time1 = get_time()
 c$omp end single
 c .....................................................................
 c
@@ -814,9 +814,9 @@ c .....................................................................
 c
 c ...
 c$omp single
-      tacbuffer = tacbuffer + MPI_Wtime() - time1
+      tacbuffer = tacbuffer + get_time() - time1
 c
-      matvectime = matvectime + MPI_Wtime() - time0
+      matvectime = matvectime + get_time() - time0
 c     if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
 c    .                            i_dspli)
 c$omp end single
@@ -853,7 +853,7 @@ c **********************************************************************
       real*8  a(*),b(*),tmp
 c ......................................................................
 c$omp single
-      time0 = MPI_Wtime()
+      time0 = get_time()
       omp_dot = 0.d0
 c$omp end single
 c$omp do reduction(+:omp_dot)
@@ -862,7 +862,7 @@ c$omp do reduction(+:omp_dot)
   100 continue
 c$omp end do
 c$omp single
-      dottime = dottime + MPI_Wtime() - time0
+      dottime = dottime + get_time() - time0
 c ......................................................................
       if (nprcs .gt. 1) then
          call MPI_ALLREDUCE(omp_dot,tmp,1,
@@ -904,14 +904,14 @@ c **********************************************************************
       integer i
       real*8  a(*),b(*),tmp
 c ......................................................................
-      time0 = MPI_Wtime()
+      time0 = get_time()
       tmp = 0.d0
 c$omp parallel do reduction(+:tmp)
       do 100 i = 1, neq_doti
          tmp = tmp + a(i)*b(i)
   100 continue
 c$omp end parallel do
-      dottime = dottime + MPI_Wtime() - time0
+      dottime = dottime + get_time() - time0
 c ......................................................................
       if (nprcs .gt. 1) then
          call MPI_ALLREDUCE(tmp,dot_par_omp_loopwise,1,

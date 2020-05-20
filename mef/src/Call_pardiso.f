@@ -28,6 +28,9 @@ c **********************************************************************
       subroutine call_mkl_pardiso(neq,nnz,ia8,ja,a,b,x,z,ia4,mtype)
       implicit none
       include 'mpif.h'
+c ...
+      real*8 get_time
+c ......................................................................
       integer*8 ia8(*),nnz
       integer ja(*),neq,ia4(*)
       real*8 a(*),b(*),x(*),z(*)
@@ -81,7 +84,7 @@ c ... simetrico definido positivo
 c .....................................................................
 c
 c ...
-      time = Mpi_Wtime()  
+      time = get_time()  
 c .....................................................................
 c
 c ... 
@@ -91,7 +94,7 @@ c ...
       call pardiso (pt  , maxfct, mnum, mtype, phase, neq, a, ia4
      .            , ja  , idum, nrhs  , iparm, msglvl, b, x, error)
 #endif
-      time = Mpi_Wtime() - time 
+      time = get_time() - time 
 c .....................................................................
 c
 c ...
@@ -188,7 +191,7 @@ c     iparm(24) = 1 !
 c .....................................................................
 c
 c ...
-c     time = Mpi_Wtime()  
+c     time = get_time()  
 c     phase = 11 ! only reordering and symbolic factorization
 c     msglvl = 1
 c     call pardiso(pt  , maxfct, mnum, mtype, phase,neq, a , ia , ja ,
@@ -224,7 +227,7 @@ c     msglvl = 1
 c     call pardiso (pt  , maxfct, mnum, mtype, phase, neq, a, ia, ja,
 c    .              idum, nrhs  , iparm, msglvl, b, x, error)
 c     write(*,*) 'Solve completed ... '
-c     time = Mpi_Wtime() - time 
+c     time = get_time() - time 
 c .....................................................................
 c
 c ... norm-2 = || x ||
