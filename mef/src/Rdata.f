@@ -3674,7 +3674,7 @@ c... Cargas nodais e deslocamentos prescritos no tempo t:
           if( nc .gt. 0 ) then
             k = id(j,i)
             if (k .eq. 1) then
-              call tload(nc,t,x(1,i),u0(j,i),c,vc)
+              call tload(nc,t,x(1,i),u0(j,i),c,vc,0)
               u0(j,i) = c
             endif
           endif

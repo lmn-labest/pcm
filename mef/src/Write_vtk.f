@@ -40,9 +40,9 @@ c ... locais
       character*15 aux1
       character*30 aux
 c ... variaveis dums
-      integer idum
-      real*8 ddum
-      real*4 fdum
+      integer idum(1)
+      real*8 ddum(1)
+      real*4 fdum(1)
 c ... arquivo      
       integer nout
       character*80 fileout,name,filein
@@ -67,9 +67,9 @@ c
 c === cabecalho
       if(legacy) then
         write(aux,'(30a)')"Malha poro mec" 
-        call head_vtk(aux,bvtk,ddum,idum,.false.,nout)
+        call head_vtk(aux,bvtk,ddum(1),idum(1),.false.,nout)
       else  
-        call head_vtu(nnode,numel,bvtk,ddum,idum,.false.,nout) 
+        call head_vtu(nnode,numel,bvtk,ddum(1),idum(1),.false.,nout) 
       endif  
 c =====================================================================
 c
@@ -1419,9 +1419,9 @@ c ... locais
 c ... tempo
       integer istep
 c ... variaveis dums
-      real*8 ddum
-      real*4 fdum
-      integer idum 
+      real*8 ddum(1)
+      real*4 fdum(1)
+      integer idum(1) 
 c ... arquivo      
       integer nout
       character*80 fileout,name,prename
@@ -1446,9 +1446,9 @@ c
 c === cabecalho
       if(legacy) then
         write(aux,'(30a)')'Malha Res' 
-        call head_vtk(aux,bvtk,ddum,idum,.false.,nout) 
+        call head_vtk(aux,bvtk,ddum(1),idum(1),.false.,nout) 
       else  
-        call head_vtu(nnode,numel,bvtk,ddum,idum,.false.,nout) 
+        call head_vtu(nnode,numel,bvtk,ddum(1),idum(1),.false.,nout) 
       endif  
 c =====================================================================
 c
@@ -1484,11 +1484,11 @@ c ... cod = 1 variaveis interias
       cod = 1
       gdl = 1
       if(legacy) then
-        call cell_prop_vtk(ia(i_p),fdum,ddum,numel,aux1,cod,gdl,bvtk
-     .                    ,nout)
+        call cell_prop_vtk(ia(i_p),fdum(1),ddum(1),numel,aux1,cod,gdl
+     .                    ,bvtk,nout)
       else
-        call cell_prop_vtu(ia(i_p),fdum,ddum,numel,aux1,cod,gdl,bvtk
-     .                    ,nout)
+        call cell_prop_vtu(ia(i_p),fdum(1),ddum(1),numel,aux1,cod,gdl
+     .                    ,bvtk,nout)
       endif 
       i_p = dealloc('p       ')
 c .....................................................................

@@ -631,7 +631,7 @@ c **********************************************************************
 c
 c **********************************************************************
 c * Data de criacao    : 11/04/2016                                    *
-c * Data de modificaco : 15/12/2016                                    * 
+c * Data de modificaco : 21/05/2020                                    * 
 c * ------------------------------------------------------------------ *   
 c * CALL_CG : chama a versao do gradiente conjudado desejada           *    
 c * ------------------------------------------------------------------ * 
@@ -716,6 +716,7 @@ c ...
 c ... precondicionador
       integer precond,iparam(*)
       real*8 m(*)
+      real*8 dot_par
 c ...
       external dot_par
       external matvec_csrc_sym_pm,matvec_csrcr_sym_pm  

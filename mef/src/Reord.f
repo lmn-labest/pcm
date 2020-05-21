@@ -72,7 +72,7 @@ c *                                                                    *
 c *   program subroutines - fnroot, rcm.                               *
 c *                                                                    *
 c **********************************************************************
-      integer xadj(*)
+      integer*8 xadj(*)
       integer mask(*),perm(*),xls(*),adjncy(*)
       integer ccsize,i,neq,nlvl,num,root
 c

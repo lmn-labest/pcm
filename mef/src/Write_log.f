@@ -59,7 +59,7 @@ c ... variaveis de arquivos
       character*80 fname,name,prename
       integer nlog
 c ...
-      real*8 use_work_vector,get_buffer_size
+      real*8 use_work_vector,get_buffer_size,aux(1)
       integer buf
 c .....................................................................
 c
@@ -71,7 +71,7 @@ c ... abre o arquivo de logs
 c .....................................................................
 c
 c ... Tempo levado na reord
-      call twrite('REORD ',reordtime,1,nlog)
+      call twrite('REORD ',aux,1,nlog)
 c
 c
 c ... Tempo levado na numeq
