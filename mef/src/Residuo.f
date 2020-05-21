@@ -41,7 +41,6 @@ c **********************************************************************
      2                      ,istop     ,type_crit ,tol
      3                      ,my_id     ,mpi       ,nout)
       implicit none
-      include 'mpif.h'
       integer nout
       integer i,j,neqi,istop,my_id,nli,type_crit
       integer id(ndf,*),nno_pload,ndf,neq_dot,ierr
@@ -96,16 +95,8 @@ c ...
 c .....................................................................
 c
 c ...
-        if(mpi) then
-          call MPI_ALLREDUCE(resu,gresu,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-c
-          call MPI_ALLREDUCE(resp,gresp,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-        else
-          gresu = resu
-          gresp = resp
-        endif
+        gresu = resu
+        gresp = resp
 c .....................................................................
 c
 c ...
@@ -159,16 +150,8 @@ c ...
           endif
         enddo
 c ...............................................................
-        if(mpi) then
-          call MPI_ALLREDUCE(du,gdu,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
- 
-          call MPI_ALLREDUCE(dp,gdp,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-        else
-          gdu = du
-          gdp = dp
-        endif
+        gdu = du
+        gdp = dp
 c .....................................................................
 c
 c ...
@@ -223,24 +206,10 @@ c ...
           endif
         enddo
 c ...............................................................
-        if(mpi) then
-          call MPI_ALLREDUCE(resu,gresu,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-c
-          call MPI_ALLREDUCE(du,gdu,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-c 
-          call MPI_ALLREDUCE(resp,gresp,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-c
-          call MPI_ALLREDUCE(dp     ,gdp  ,1,MPI_REAL8
-     .                      ,MPI_SUM,MPI_COMM_WORLD,ierr)
-        else
-          gresu = resu
-          gresp = resp
-          gdu   = du
-          gdp   = dp
-        endif
+        gresu = resu
+        gresp = resp
+        gdu   = du
+        gdp   = dp
 c .....................................................................
 c
 c ...

@@ -511,7 +511,6 @@ c * ------------------------------------------------------------------ *
 c * Calcula as tensoes apenas nos vertices                             *     
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'termprop.fi'
 c ... mpi
       integer*8 i_xfi
@@ -646,8 +645,6 @@ c ... tensao efetiva de biot
   900 continue
 c .......................................................................
 c
-c ... Comunica vetor de contagem de elementos por no'
-      if (novlp) call allgatheri(ic,i_xfi)
 c .......................................................................
       do 1000 i = 1, nnode
 c ... no de vertice
@@ -1041,7 +1038,6 @@ c * ------------------------------------------------------------------ *
 c * Calcula as porosidades apenas nos vertices                         *     
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'termprop.fi'
 c ... mpi
       integer*8 i_xfi
@@ -1147,10 +1143,6 @@ c ...... media do vetor global
   900 continue
 c .......................................................................
 c
-c ... Comunica vetor de contagem de elementos por no'
-      if (novlp) call allgatheri(ic,i_xfi)
-c .......................................................................
-c
 c ...
       if (vprop(1)) then
         do i = 1, nnode
@@ -1231,7 +1223,6 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'termprop.fi'
 c ... mpi
       integer*8 i_xfi
@@ -1380,7 +1371,6 @@ c * ------------------------------------------------------------------ *
 c * Calcula as tensoes apenas nos vertices                             *     
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'termprop.fi'
 c ... mpi
       integer*8 i_xfi
@@ -1416,9 +1406,6 @@ c ...... media do vetor global
   800   continue
   900 continue
 c .......................................................................
-c
-c ... Comunica vetor de contagem de elementos por no'
-      if (novlp) call allgatheri(ic,i_xfi)
 c .......................................................................
       do 1000 i = 1, nnode
         if(fnno(i) .eq. 1 ) then
@@ -1471,7 +1458,6 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'termprop.fi'
 c ... mpi
       integer*8 i_xfi
@@ -1631,7 +1617,6 @@ c * ------------------------------------------------------------------ *
 c * Calcula as tensoes apenas nos vertices                             *     
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'termprop.fi'
 c ... mpi
       integer*8 i_xfi
@@ -1697,8 +1682,6 @@ c ...... media do vetor global
   900 continue
 c .......................................................................
 c
-c ... Comunica vetor de contagem de elementos por no'
-      if (novlp) call allgatheri(ic,i_xfi)
 c .......................................................................
       do 1000 i = 1, nnode
         if(fnno(i) .eq. 1 ) then
@@ -1749,7 +1732,6 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ *
 c **********************************************************************
       implicit none
-      include 'mpif.h' 
       include 'omp_lib.h'
       include 'transiente.fi'
       include 'termprop.fi'
@@ -1808,12 +1790,7 @@ c ......................................................................
 c ......................................................................
 c
 c ...    
-      if(mpi) then
-        call MPI_Allreduce(dtc_min,g_dtc_min,1,MPI_REAL8
-     .                    ,MPI_MIN,MPI_COMM_WORLD,ierr)
-      else
-        g_dtc_min = dtc_min
-      endif
+      g_dtc_min = dtc_min
 c ......................................................................
 c
 c ...

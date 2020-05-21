@@ -47,7 +47,6 @@ c *       cao                                                         *
 c * 37 -> arquivos de porosidada por nos                              *
 c *********************************************************************
       implicit none      
-      include 'parallel.fi'
       character*80 NomeArqDados,NomeArqGerado
       character*30 StrExtensao,Str1,Str2
       integer      iPonto,TamanhoNome,NumArq1,NumArq2,code

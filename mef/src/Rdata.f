@@ -7,11 +7,11 @@
      6                  ,i_v
      6                  ,i_tx1p    ,i_tx2p    ,i_epsp     ,i_plastic
      7                  ,i_porosity,i_fnno    ,i_elplastic,i_vpropel
-     8                  ,fstress0  ,fporomec  
-     9                  ,print_quad,plastic   ,vprop     ,nin     )
+     8                  ,fstress0  ,fporomec  ,print_quad ,plastic
+     9                  ,vprop     ,cc_macros ,nin     )
 c **********************************************************************
 c * Data de criacao    : 10/01/2016                                    *
-c * Data de modificaco : 19/05/2020                                    *
+c * Data de modificaco : 20/05/2020                                    *
 c * ------------------------------------------------------------------ *
 c * RDAT_PCM: leitura de dados do problema poromecanico.               *
 c * ------------------------------------------------------------------ *
@@ -63,6 +63,7 @@ c * vprop(*) - propriedades variaveis                                  *
 c *           1 - prop variavel  (true|false)                          *
 c *           2 - konzey-Caraman (true|false)                          *
 c *           3 - mecanico       (true|false)                          *
+c * cc_macros - guarda a macro das condicoes de contorno               *
 c * ------------------------------------------------------------------ *
 c * OBS:                                                               *
 c * ------------------------------------------------------------------ *
@@ -95,9 +96,9 @@ c ......................................................................
       include 'elementos.fi'
       include 'load.fi'
       include 'string.fi'
-      include 'parallel.fi'
       include 'termprop.fi'
 c ......................................................................
+      character*15  cc_macros(100)
       integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndft,ndm,nst,ntn
       integer maxgrade,iplastic
 c ... ponteiros      
@@ -135,9 +136,9 @@ c ......................................................................
 c ......................................................................
 c
 c ... Leitura dos parametros da malha: nnode,numel,numat,nen,ndf,ndm
-      if(my_id .eq. 0) print*,'loading parameters ...'
+      print*,'loading parameters ...'
       call parameters(nnodev,numel,numat,nen,ndf,ndm,nin)
-      if(my_id .eq. 0) print*,'load.'
+      print*,'load.'
       nnode  = nnodev
       nst    = 0
 c ......................................................................
@@ -307,7 +308,7 @@ c
 c ... Controle de Macros (PRE-processador):
 c
       nmacros = nmacros + 1
-      write(macros(nmacros),'(15a)') rc
+      write(cc_macros(nmacros),'(15a)') rc
 c ......................................................................
       go to (400, 450, 500,    ! materials   ,bar2         ,        
      1       550, 600, 650,    !             ,             ,     
@@ -360,7 +361,7 @@ c ...
 c .....................................................................
       endif
 c .....................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50
 c ......................................................................
       
@@ -371,54 +372,54 @@ c
 c ... Conetividades tria3:          
 c
   500 continue
-      if(my_id .eq. 0) print*,'loading ...'
+      print*,'loading ...'
 c .....................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50
 c ......................................................................
 c
 c ... Conetividades quad4:
 c
   550 continue
-      if(my_id .eq. 0) print*,'loading ...'
+      print*,'loading ...'
 c .....................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50  
 c ......................................................................
 c
 c ... Conetividades tetra4:
 c
   600 continue
-      if(my_id .eq. 0) print*,'loading ...'
+      print*,'loading ...'
 c .....................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50
 c ......................................................................
 c
 c ... Conetividades hexa8:
 c
   650 continue
-      if(my_id .eq. 0) print*,'loading ...' 
+      print*,'loading ...' 
 c .....................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50
 c ......................................................................
 c
 c ... Conetividades hexa20:
 c
   700 continue
-      if(my_id .eq. 0) print*,'loading ...'
+      print*,'loading ...'
 c ......................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50
 c ......................................................................
 c
 c ... Conetividades tetra10:
 c
   750 continue
-      if(my_id .eq. 0) print*,'loading ...'
+      print*,'loading ...'
 c ......................................................................
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 50
 c ......................................................................
 c
@@ -431,27 +432,27 @@ c
 c ... Coordenadas:
 c
   850 continue
-      if(my_id .eq. 0) print*,'loading coordinates ...'
+      print*,'loading coordinates ...'
       call coord(ia(i_x),nnodev,ndm,nin)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
 c ... constrainpmec - restricoes nodais (deslocamentos + pressao)
 c
   900 continue
-      if(my_id .eq. 0) print*,'loading constrainpmec ...'
+      print*,'loading constrainpmec ...'
       call bound(ia(i_id),nnodev,ndf,nin,1)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
 c ... constraindisp - restricoes nodais (deslocamentos)
 c
   950 continue
-      if(my_id .eq. 0) print*,'loading constraindisp ...'
+      print*,'loading constraindisp ...'
       call bound(ia(i_id),nnodev,ndf,nin,1)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
@@ -459,7 +460,7 @@ c ... nodalforces - forcas nodais:
 c
  1000 continue
       if(f_read_el) then
-        if(my_id .eq. 0) print*,'loading nodalforces ...'
+        print*,'loading nodalforces ...'
         call forces(ia(i_f),nnodev,ndf,nin)
 c ... malha quadratica gerada internamente
         if(mk_el_quad) then
@@ -470,51 +471,51 @@ c ......................................................................
         print*,'MACRO: nodalforces !! Unread Elements'
         call stop_mef()
       endif
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
 c ... elmtloads - cargas nos elementos
 c
  1050 continue
-      if(my_id .eq. 0) print*,'loading elmtloads ...'
+      print*,'loading elmtloads ...'
       if(f_read_el) then
         call bound(ia(i_eload),numel,7,nin,3) 
       else
         print*,'MACRO: elmtloads !! Unread Elements'
         call stop_mef()
       endif
-      if(my_id .eq. 0) print*,'done.'
+       print*,'done.'
       go to 100
 c ......................................................................
 c
 c ... nodalloads - nos com cargas variaveis no tempo:
 c
  1100 continue
-      if(my_id .eq. 0) print*,'loading nodalloads ...'
+      print*,'loading nodalloads ...'
       if(f_read_el) then
         call bound(ia(i_nload),nnodev,ndf,nin,2) 
       else
         print*,'MACRO: nodalloads !! Unread Elements'
         call stop_mef()
       endif
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       goto 100
 c ......................................................................
 c
 c ...  
 c
  1150 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       goto 100
 c ......................................................................
 c
 c ... 
 c
  1200 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       goto 100
 c ......................................................................
 c
@@ -527,44 +528,44 @@ c
 c ...
 c
  1300 continue
-      if(my_id .eq. 0) print*,'loading hstaticpres ...'
+      print*,'loading hstaticpres ...'
       call init_hydrostatic_pres(ia(i_x),ia(i_u0)
      .                          ,nnodev,ndf,ndm,nin)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       goto 100
 c ......................................................................
 c
 c ...
 c
  1350 continue
-      if(my_id .eq. 0) print*,'loading hstaticstress ...'
+      print*,'loading hstaticstress ...'
       fstress0 = .true. 
       call init_hydrostatic_stress(ia(i_tx0),ia(i_x)
      .                             ,nnodev,ntn,ndm,nin)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
 c ...
 c
  1400 continue
-      if(my_id .eq. 0) print*,'loading elmtpresloads ...'
+      print*,'loading elmtpresloads ...'
       if(f_read_el) then
         call bound(ia(i_eloadp),numel,7,nin,3) 
       else
         print*,'MACRO: elmtpresloads !! Unread Elements'
         call stop_mef()
       endif
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
 c ... Definicao das cargas variaveis no tempo:
 c
  1450 continue
-      if(my_id .eq. 0) print*,'loading loads ...'
+      print*,'loading loads ...'
       call rload(nin)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       goto 100
 c ......................................................................
 c
@@ -594,21 +595,21 @@ c
 c ... intialpres
 c
  1650 continue
-      if(my_id .eq. 0) print*,'loading initialpres ...'
+      print*,'loading initialpres ...'
       if(f_read_el) then
         call init_poro_mec(ia(i_u0),nnodev,ndf,ndf,ndf,nin)
       else
         print*,'MACRO: initialpres !! Unread Elements'
         call stop_mef()
       endif
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100 
 c ......................................................................
 c
 c ...
 c      
  1700 continue
-      if(my_id .eq. 0) print*,'loading initialstress ...'
+      print*,'loading initialstress ...'
       if(f_read_el) then
         fstress0 = .true.  
         call init_poro_mec(ia(i_tx0),nnodev,ntn,1,ntn,nin)
@@ -623,15 +624,15 @@ c ......................................................................
         print*,'MACRO: initialstress !! Unread Elements'
         call stop_mef()
       endif
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100
 c ......................................................................
 c
 c ... :                                         
 c      
  1750 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 100 
 c ......................................................................
 c
@@ -662,48 +663,48 @@ c
 c ... 
 c
  1900 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 50
 c ......................................................................  
 c
 c ... 
 c
  1950 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 50
 c ......................................................................
 c
 c ... tetra4ov                              
 c      
  2000 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 50                   
 c ......................................................................
 c
 c ... hexa8ov                              
 c      
  2050 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 50                  
 c ......................................................................
 c
 c ... tetra10ov                            
 c      
  2100 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 50                  
 c ......................................................................
 c
 c ... hexa20ov                             
 c      
  2150 continue
-      if(my_id .eq. 0) print*,'loading ...'
-      if(my_id .eq. 0) print*,'done.'
+      print*,'loading ...'
+      print*,'done.'
       go to 50                                
 c ......................................................................
 c
@@ -716,25 +717,16 @@ c
 c ... fmaterials - arquivos com propriedades do materias
 c      
  2250 continue
-      if(my_id .eq. 0) print*,'loading fmaterials ...'
-      call fmate(ia(i_ie),ia(i_e),numat,my_id,nin)
+      print*,'loading fmaterials ...'
+      call fmate(ia(i_ie),ia(i_e),numat,0    ,nin)
       call check_element(ia(i_ie),numat,plastic,vprop)
-      if(my_id .eq. 0) print*,'done.'
+      print*,'done.'
       go to 100                  
 c ......................................................................
 c
 c ... End:
 c
  2300 continue
-c
-c ... Inclui macro de paralelo (PRE-processador):
-c      
-      if (nprcs .gt. 1) then
-         write(macros(nmacros),'(15a)') 'parallel'
-         nmacros = nmacros + 1
-         write(macros(nmacros),'(15a)') 'end'
-      endif
-c ......................................................................
 c
 c ... 
       i_fnno  = alloc_4('ffno    ',    1,nnode)
@@ -1855,196 +1847,6 @@ c ......................................................................
       end 
 c ======================================================================
 c
-c ======================================================================
-c
-c     Leitura da estrutura de dados do paralelo
-c
-c ======================================================================
-      subroutine read_par(nin,nnode,numel)
-c **********************************************************************
-c *                                                                    *
-c *   READ_PAR                                                         *
-c *   --------                                                         *
-c *                                                                    *
-c *   Le informacoes da paralelizacao geradas pelo pre-processador     *
-c *   atraves do macro-comando read_par em rdat e cria os arranjos:    *
-c *                                                                    *
-c *      noLG(nnode) - mapa Local->Global de nos                       *
-c *      noGL(nnoG)  - mapa Global-<Local de nos                       *
-c *      elLG(numel) - mapa Local->Global de elementos                 *
-c *      fmap(nnof)  - mapa Interface->Global de nos                   *
-c *      idG(ndf,nnoG) - restricoes nodais globais                     *
-c *                                                                    *
-c *   Parâmetros de entrada:                                           *
-c *   ----------------------                                           *
-c *                                                                    *
-c *                                                                    *
-c *   Parâmetros de saida:                                             *
-c *   -------------------                                              *
-c *                                                                    *
-c *                                                                    *
-c **********************************************************************
-      use Malloc
-      implicit none
-c      include 'mpif.h'
-      include 'parallel.fi'
-      include 'elementos.fi'
-      integer nin,nnode,numel,i,j,k
-      character*500 comando,string
-c ...................................................................... 
-      read(nin,*) string,nnovG      
-      read(nin,*) string,nnoG      
-      read(nin,*) string,nelG      
-c ......................................................................
-c
-c ... Metodo de sub-divisao de dominio
-c
-      ovlp  = .true.
-      novlp = .false.
-      read(nin,*)  comando
-      if(comando(1:3) .eq. 'non') then
-         ovlp  = .false.
-         novlp = .true.
-      endif
-c ......................................................................
-c
-c ... Numeros de no's do processo, parte non-overlapping
-c
-      read(nin,'(a80)')  comando
-      read(comando,*) string,nno1,
-     .                string,nno2,
-     .                string,nno3,
-     .                string,nno4,
-     .                string,nno1a
-      if (ovlp)read(nin,*) string,numel_ov
-c ......................................................................
-c
-c ... Numeros de elementos do processo, parte non-overlapping
-c
-      numel_nov = numel - numel_ov
-c ......................................................................
-c
-c ... {noLG} = Mapa Local -> Global de no's
-c
-      read(nin,*) string
-      i_noLG = alloc_4('noLG    ', 1, nnode)
-      call Levet_4(ia(i_noLG),nnode,nin)
-      i_noGL = alloc_4('noGL    ', 1, nnoG)
-      call mzero(ia(i_noGL),nnoG)      
-      do i = 1, nnode
-         j = ia(i_noLG+i-1)
-         ia(i_noGL+j-1) = i
-      enddo        
-c ......................................................................
-c
-c ... {noGL} = Mapa Global -> Local de no's
-c
-c      read(nin,*) string,nnoG
-c      i_noGL = alloc_4('noGL    ', 1, nnoG)
-c      call Lemtx_4(ia(i_noGL),1,nin)
-c ......................................................................
-c
-c ..... Numeros de elementos pelo tipo
-c
-      read(nin,'(a)')  comando
-      read(comando,*) string, nbar2(1)   ,nbar2(2)   
-     .               ,string, ntria3(1)  ,ntria3(2)  
-     .               ,string, nquad4(1)  ,nquad4(2)  
-     .               ,string, ntetra4(1) ,ntetra4(2) 
-     .               ,string, nhexa8(1)  ,nhexa8(2)
-     .               ,string, nprism6(1) ,nprism6(2)
-     .               ,string, ntetra10(1),ntetra10(2)
-     .               ,string, nhexa20(1) ,nhexa20(2)
-c ......................................................................
-c
-c ... {elLG} = Mapa Local -> Global de elementos
-c
-c      read(nin,*) string,nelG
-      read(nin,*) string
-      i_elLG = alloc_4('elLG    ', 1, numel)
-      call Levet_4(ia(i_elLG),numel,nin)
-c ......................................................................
-c
-c ... {rcvs0} = lista dos tamanhos dos blocos de nós {Vfi}
-c
-c      i_rcvs0 = alloc_4('rcvs0   ', 1, nprcs)
-c      if (ovlp) then
-c        neqfi=nno1a+nno2
-c      else
-c        neqfi=nno2+nno3
-c      endif
-c      call MPI_allgather(neqfi,1,MPI_INTEGER,ia(i_rcvs0),1,MPI_INTEGER,
-c     .                   MPI_COMM_WORLD,ierr)
-c ......................................................................
-c
-c ... {dspl0} = Ponteiro p/ início de cada bloco em {Vf}
-c
-c      i_dspl0 = alloc_4('dspl0   ', 1, nprcs)
-c      ia(i_dspl0) = 0
-c      do i = 2, nprcs
-c        ia(i_dspl0+i-1) = ia(i_dspl0+i-2) + ia(i_rcvs0+i-2)
-c      enddo
-c ......................................................................
-c
-c ... {fmap0} = Mapa Interface -> Global de no's
-c
-c      read(nin,*) string,nnof
-c      i_fmap0 = alloc_4('fmap0   ', 1, nnof)
-c      call Levet_4(ia(i_fmap0),nnof,nin)
-      read(nin,*) string,nnof1,nnof2
-      i_fmap0 = alloc_4('fmap0   ', 1, nnof1+nnof2)
-      call Levet_4(ia(i_fmap0),nnof1,nin)
-      if(ovlp)call Levet_4(ia(i_fmap0+nnof1),nnof2,nin)
-c ......................................................................
-c
-c ...   Restricoes Globais
-c
-c      if(ndf .gt. 0) then
-c         read(nin,*) string
-c         i_idG = alloc_4('idG     ', ndf, nnoG)
-c         call Lemtx_4(ia(i_idG),ndf,nin)
-c      endif
-c      if (ndft .gt. 0) then
-c         read(nin,*) string
-c         i_idGt = alloc_4('idGt    ', ndft, nnoG)
-c         call Lemtx_4(ia(i_idGt),ndft,nin)    
-c      endif
-c ......................................................................
-c
-c ... Estruturas de comunicacao sendr
-c
-c      read(nin,*) string !nviz
-c      read(nin,*) nviz
-c      i_ranks  = alloc_4('ranks   ', 1, nprcs)
-c      read(nin,*) string !ranks
-c      read(nin,*) (ia(i_ranks+j), j = 0,nviz-1)
-      nviz1 = 0
-      nviz2 = 0
-      read(nin,*) string !nviz
-      read(nin,*) nviz1
-      nviz2 = nviz1
-      if(ovlp)read(nin,*) nviz2
-c ....
-      i_ranks  = alloc_4('ranks   ', 1, nviz1+nviz2)
-      read(nin,*) string !ranks
-      read(nin,*) (ia(i_ranks+j), j = 0,nviz1-1)
-      if(ovlp)read(nin,*) (ia(i_ranks+nviz1+j), j = 0,nviz2-1)
-c ....
-      i_rcvs0 = alloc_4('rcvs0   ', 1, nviz1+nviz2)
-      read(nin,*) string !rcvs
-      read(nin,*) (ia(i_rcvs0+j), j = 0,nviz1-1)
-      if(ovlp)read(nin,*) (ia(i_rcvs0+nviz1+j), j = 0,nviz2-1)
-c ....
-      i_dspl0 = alloc_4('dspl0   ', 1, nviz1+nviz2)
-      read(nin,*) string !dspl
-      read(nin,*) (ia(i_dspl0+j), j = 0,nviz1-1)
-      if(ovlp)read(nin,*) (ia(i_dspl0+nviz1+j), j = 0,nviz2-1)
-c ... end parallel
-      read(nin,*) string
-c ......................................................................
-      return
-      end
-c ......................................................................
       subroutine Levet_4(array,lin,nin)
 c **********************************************************************
 c *                                                                    *

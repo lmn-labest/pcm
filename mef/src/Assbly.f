@@ -259,7 +259,6 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ *
 c **********************************************************************
       implicit none
-      include 'parallel.fi'
       integer*8 ia(*),nad,kk,idd
       integer ld(*),ja(*),nst,neq
       integer i,j,k,l
@@ -287,15 +286,6 @@ c ......................................................................
                   endif
   100          continue
 c ......................................................................
-c
-c ...     Monta a parte retangular da matriz para particoes overlapping:
-               if (ovlp) then 
-                  do 101 kk = ia(neq+k+1), ia(neq+k+2)-1
-                    idd = nad + kk
-                    if (l.eq.ja(idd)) al(idd) = al(idd)+s(i,j) 
-  101             continue        
-c ......................................................................         
-               endif
   110       continue
          endif
   200 continue

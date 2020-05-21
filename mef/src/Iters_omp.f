@@ -86,7 +86,6 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ *
 c ********************************************************************** 
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
       include 'openmp.fi'
 c ...
@@ -284,11 +283,6 @@ c$omp single
 c ......................................................................
 c 
 c ...    
-      if(mpi) then
-        call MPI_barrier(MPI_COMM_WORLD,ierr)
-        call mpi_mean(vmean,time,nprcs) 
-        time   = vmean        
-      endif    
       mflops = (flop_cg(neq,nad,j,2,mpi)*1.d-06)/time  
 c ......................................................................
       if(my_id .eq.0 .and. fprint )then
@@ -417,7 +411,6 @@ c * linear systems                                                     *
 c * ------------------------------------------------------------------ * 
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
       include 'openmp.fi'
 c ...
@@ -662,11 +655,6 @@ c$omp single
 c ......................................................................
 c 
 c ...    
-      if(mpi) then
-        call MPI_barrier(MPI_COMM_WORLD,ierr)
-        call mpi_mean(vmean,time,nprcs) 
-        time   = vmean        
-      endif    
       mflops = (flop_sqrm(neq,nad,j,2,mpi)*1.d-06)/time  
 c ......................................................................
       if(my_id .eq.0 .and. fprint )then
@@ -804,7 +792,6 @@ c * versao com matriz vetor geral ( x = Vy ) versao coluna             *
 c * versao com refined modified gram-schmidt                           *
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
       include 'openmp.fi'
 c ...
@@ -1229,7 +1216,6 @@ c * s(k)                                                               *
 c * e(k+1)                                                             *
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
       include 'openmp.fi'
 c ...
@@ -1535,7 +1521,6 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ *   
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
       include 'openmp.fi'
 c ...
@@ -1718,7 +1703,6 @@ c *   ad(*),al(*),au(*) - inalterados                                  *
 c *                                                                    *
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
       include 'openmp.fi'
 c ...
@@ -1871,7 +1855,6 @@ c *   b(neq),ad(*),al(*),au(*) - modificados                           *
 c *                                                                    *
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
 c ...
       real*8 get_time
@@ -2133,7 +2116,6 @@ c *   ad(*),al(*),au(*) - inalterados                                  *
 c *                                                                    *
 c **********************************************************************
       implicit none
-      include 'mpif.h'
 c ...
       real*8 get_time
 c ......................................................................

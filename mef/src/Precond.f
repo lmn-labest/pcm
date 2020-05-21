@@ -432,7 +432,6 @@ c * m(10,2) = | a44 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 |              *
 c **********************************************************************
       subroutine op_block_precond(m,x,y,aux,iparam)
       implicit none
-      include 'mpif.h'
       include 'time.fi'
       integer i,ii,j,jj,k,kk,iparam(*),tmp1,tmp2,ndiv,nblock,rest
       real*8 m(iparam(3),*),x(*),y(*),a1,a2,a3,a4,a5,a6,x1,x2,x3
@@ -960,7 +959,6 @@ c * ------------------------------------------------------------------ *
 c * Todas as informação da matriz são da parte inferior                * 
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'time.fi'
       integer n,ia(*),ja(*)
       integer i,k,kk
@@ -1029,7 +1027,6 @@ c * ------------------------------------------------------------------ *
 c * Todas as informação da matriz são da parte inferior                * 
 c **********************************************************************
       implicit none
-      include 'mpif.h'
       include 'time.fi'
       integer n,ia(*),ja(*)
       integer i,k,kk
@@ -1567,7 +1564,7 @@ c **********************************************************************
 c
 c c ********************************************************************  
 c * Data de criacao    : 27/06/2016                                    *
-c * Data de modificaco : 15/12/2016                                    * 
+c * Data de modificaco : 20/05/2020                                    * 
 c * ------------------------------------------------------------------ *  
 c * CAL_PRECOND : calculo o precondicionador                           *
 c * ------------------------------------------------------------------ * 
@@ -1605,7 +1602,6 @@ c **********************************************************************
      4                      ,i_xfi  ,i_rcvsi,i_dspli
      5                      ,novlp  ,my_id)
       implicit none
-      include 'mpif.h'
       include 'precond.fi'
       include 'time.fi'
 c ... MPI
@@ -1628,11 +1624,6 @@ c ... precondicionador diagonal:
         precondtime = get_time() - precondtime  
 c ...    precondicionador diagonal:
         call aequalb(m,ad,neq) 
-c ...    Comunicacao da diagonal para o caso non-overlapping:
-        if (novlp) call communicate(m,neqf1i,neqf2i,i_fmapi,i_xfi
-     .                             ,i_rcvsi,i_dspli)
-c .....................................................................
-c
 c ...
         call pre_diag(m,m,neq,.false.)  
         precondtime = get_time() - precondtime 
@@ -1658,10 +1649,6 @@ c ... precondicionador modulo da diagonal:
       else if(precond .eq. 5) then
 c ...    precondicionador diagonal:
         call aequalb(m,ad,neq) 
-c ...    Comunicacao da diagonal para o caso non-overlapping:
-        if (novlp) call communicate(m,neqf1i,neqf2i,i_fmapi,i_xfi
-     .                             ,i_rcvsi,i_dspli)
-c .....................................................................
         precondtime = get_time() - precondtime  
         call pre_diag(m,m,neq,.true.)
         precondtime = get_time() - precondtime 

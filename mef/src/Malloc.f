@@ -700,8 +700,6 @@ c **********************************************************************
       subroutine availablemem()
       use Malloc
       implicit none
-      include 'mpif.h'
-      include 'parallel.fi'
       integer ier
 c ... aloca memoria no heap
       allocate(ia(maxmem), stat=ier)
@@ -711,36 +709,11 @@ c ... aloca memoria no heap
       endif
 c .....................................................................
 c
-c ...      
-      if(nprcs .gt. 1) then
-       call MPI_barrier(MPI_COMM_WORLD,ierr)
-       if(my_id .eq. 0) then 
-         print*,'**************   init_malloc   ***********************'
-       endif
-       call MPI_barrier(MPI_COMM_WORLD,ierr)
-c .....................................................................
-c
-c ... 
-       call MPI_barrier(MPI_COMM_WORLD,ierr)
-       write(*,'(1x,a,i3.3,a,1x,i8,1x,a)')
-     .      'Available mem in work vector mpi_id['
-     .      ,my_id,']',(maxmem*4)/(1024**2),'MBs'
-       call MPI_barrier(MPI_COMM_WORLD,ierr)
-c .....................................................................
 c
 c ...
-       if(my_id .eq. 0) then
-         print*,'******************************************************'
-       endif
-       call MPI_barrier(MPI_COMM_WORLD,ierr)
-c .....................................................................
-c
-c ...
-      else
-       print*,'**************   init_malloc   ***********************' 
-       print*,'Available mem in work vector.',(maxmem*4)/(1024**2),'MBs'
-       print*,'******************************************************' 
-      endif
+      print*,'**************   init_malloc   ***********************' 
+      print*,'Available mem in work vector.',(maxmem*4)/(1024**2),'MBs'
+      print*,'******************************************************' 
 c .....................................................................
       return
       end

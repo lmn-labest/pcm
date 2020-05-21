@@ -10,7 +10,6 @@ c *   matvec_csrsym_omp                                                *
 c *   matvec_csrcr_omp                                                 *
 c *   matvec_csrcrsym_omp                                              *
 c *   dot_par_omp                                                      *
-c *   dot_par_omp_loopwise                                             *
 c * --------------------------Poromecanico --------------------------- *
 c *   matvec_csrc_sym_pm_omp                                           *
 c *   matvec_csrcr_sym_pm_omp                                          *
@@ -57,9 +56,7 @@ c **********************************************************************
      .                           x,y,neqf1i,neqf2i,i_fmapi,i_xfi,
      .                           i_rcvsi,i_dspli,thread_y)
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer neq,ia(*),ja(*),dum0,dum1,dum2,i,j,k,jak,inc
@@ -109,12 +106,6 @@ c$omp end do
       end do
 c$omp single
       matvectime = matvectime + get_time() - time0
-c ......................................................................
-c
-c ... Comunicacao do vetor y no sistema non-overlapping:
-c
-      if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
-     .                            i_dspli)
 c$omp end single
 c ......................................................................
       return
@@ -156,9 +147,7 @@ c **********************************************************************
      .                              x,y,neqf1i,neqf2i,i_fmapi,i_xfi,
      .                              i_rcvsi,i_dspli,thread_y)
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer neq,ia(*),ja(*),dum0,dum1,dum2,dum3,i,j,k,jak,inc
@@ -209,8 +198,6 @@ c$omp end do
       end do
 c$omp single
       matvectime = matvectime + get_time() - time0
-      if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
-     .                            i_dspli)
 c$omp end single
 c ......................................................................
       return
@@ -252,9 +239,7 @@ c **********************************************************************
      .                            neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
      .                            i_dspli,thread_y)
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer neq,ia(*),ja(*),ia1(*),ja1(*),i,j,k,jak,inc
@@ -264,10 +249,6 @@ c ... ponteiros
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
       real*8  thread_y(*)
 c$omp single
-c ......................................................................
-c
-c ... Comunicacao do vetor x no sistema overlapping:
-      call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
       time0 = get_time()
 c$omp end single
@@ -354,9 +335,7 @@ c **********************************************************************
       subroutine matvec_csrcrsym_omp(neq,ia,ja,ia1,ja1,ad,al,dum0,ar,x,
      .           y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli,thread_y)
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer neq,ia(*),ja(*),ia1(*),ja1(*),i,j,k,jak,dum0,inc
@@ -366,11 +345,6 @@ c **********************************************************************
 c ... ponteiros      
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
 c$omp single
-c ......................................................................
-c
-c ... Comunicacao do vetor x no sistema overlapping:
-c
-      call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
       time0 = get_time()
 c$omp end single
@@ -464,9 +438,7 @@ c **********************************************************************
      .                                 ,neqf1i,neqf2i,i_fmapi,i_xfi
      .                                 ,i_rcvsi,i_dspli,thread_y)
       implicit none 
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer*8 ia(*),k
@@ -538,9 +510,6 @@ c$omp single
       tacbuffer = tacbuffer + get_time() - time1
 c
       matvectime = matvectime + get_time() - time0
-c
-      if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
-     .                            i_dspli)
 c$omp end single
 c ......................................................................
       return
@@ -591,9 +560,7 @@ c **********************************************************************
      3                                  ,neqf1i,neqf2i,i_fmapi,i_xfi
      4                                  ,i_rcvsi,i_dspli,thread_y)
       implicit none 
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer*8 ia(*),iar(*),k
@@ -606,10 +573,6 @@ c ... ponteiros
 c ......................................................................
 c$omp single
       time0 = get_time()
-c
-c ... Comunicacao do vetor x no sistema overlapping:
-c
-      call communicate(x,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,i_dspli)
 c ......................................................................
 c$omp end single
 
@@ -721,9 +684,7 @@ c **********************************************************************
      3                             ,neqf1i,neqf2i,i_fmapi,i_xfi
      4                             ,i_rcvsi,i_dspli,thread_y)
       implicit none 
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer neq,nequ
@@ -817,8 +778,6 @@ c$omp single
       tacbuffer = tacbuffer + get_time() - time1
 c
       matvectime = matvectime + get_time() - time0
-c     if (novlp) call communicate(y,neqf1i,neqf2i,i_fmapi,i_xfi,i_rcvsi,
-c    .                            i_dspli)
 c$omp end single
 c ......................................................................
       return
@@ -844,9 +803,7 @@ c *                                                                    *
 c **********************************************************************
       real*8 function dot_par_omp(a,b,neq_doti)
       implicit none
-      include 'mpif.h'
       include 'omp_lib.h'
-      include 'parallel.fi'
       include 'time.fi'
       include 'openmp.fi'
       integer i,neq_doti
@@ -864,12 +821,6 @@ c$omp end do
 c$omp single
       dottime = dottime + get_time() - time0
 c ......................................................................
-      if (nprcs .gt. 1) then
-         call MPI_ALLREDUCE(omp_dot,tmp,1,
-     .                      MPI_DOUBLE_PRECISION,
-     .                      MPI_SUM,MPI_COMM_WORLD,ierr)
-         omp_dot = tmp
-      endif
 c$omp end single
       dot_par_omp = omp_dot
 c$omp barrier 
@@ -877,49 +828,3 @@ c ......................................................................
       return
       end
 c *********************************************************************
-c
-c **********************************************************************
-c *                                                                    *
-c *   DOT_PAR_OMP_LLOPWISE: produto escalar omp(funcao chamada de uma  *
-c *   regiao sequancial, portanto a necessidade da abertura de uma     *
-c *   regiao paralela).                                                *
-c *                                                                    *
-c *   Parametros de entrada:                                           *
-c *                                                                    *
-c *   a        - vetor                                                 *
-c *   b        - vetor                                                 *
-c *   neq_doti - dimensao dos vetores                                  *
-c *                                                                    *
-c *   Parametros de saida:                                             *
-c *                                                                    *
-c *   dot    - valor do produto escalar                                *
-c *                                                                    *
-c **********************************************************************
-      real*8 function dot_par_omp_loopwise(a,b,neq_doti)
-      implicit none
-      include 'mpif.h'            
-      include 'parallel.fi'
-      include 'time.fi'
-      integer neq_doti 
-      integer i
-      real*8  a(*),b(*),tmp
-c ......................................................................
-      time0 = get_time()
-      tmp = 0.d0
-c$omp parallel do reduction(+:tmp)
-      do 100 i = 1, neq_doti
-         tmp = tmp + a(i)*b(i)
-  100 continue
-c$omp end parallel do
-      dottime = dottime + get_time() - time0
-c ......................................................................
-      if (nprcs .gt. 1) then
-         call MPI_ALLREDUCE(tmp,dot_par_omp_loopwise,1,
-     .                 MPI_DOUBLE_PRECISION,MPI_SUM,MPI_COMM_WORLD,ierr)
-      else
-         dot_par_omp_loopwise = tmp
-      endif
-c ......................................................................    
-      return
-      end
-c **********************************************************************
