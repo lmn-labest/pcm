@@ -22,7 +22,7 @@ c **********************************************************************
      .                    ,block_pu)
 c **********************************************************************
 c * Data de criacao    : 26/11/2019                                    *
-c * Data de modificaco : 00/00/0000                                    * 
+c * Data de modificaco : 21/05/2020                                    * 
 c * ------------------------------------------------------------------ *       
 c * ELMT12_PM: Elemento hexaedricos de 20 nos para problemas           *  
 c * poromecanico elasticos                                             *
@@ -119,7 +119,7 @@ c ...
 c
       data rn / -1.d0,
      1           1.d0,              
-     2           0.5d0/                
+     2           0.0d0/                
 c
       data nen/3/
       parameter (nint = 4)
@@ -334,10 +334,10 @@ c       tp1 = (i-1)*1 + 1
 c ...   p(1...8) = u(4 5) 
         l   = i  + 3 
 c ... calculo do determinante
-        call sfbar2_m(hp,hpx,ri,.true.,.true.)
+        call sfbar2_m(hp,hpx,0.d0,.false.,.true.)
         hpx(1:2)= hpx(1:2)/det
 c ... calculo da derivadas das funcoes de interpolacao
-        call sfbar3_m(hu,hux,rn(i),.true.,.true.)
+        call sfbar3_m(hu,hux,rn(i),.false.,.true.)
         hux(1:3)= hux(1:3)/det
 c .....................................................................
 c ... deformacoes nos pontos de integracao
@@ -362,7 +362,7 @@ c ... fluxo nodal
 c ... fuxo (2x1 + 2x1 + 1 = 5)                 
         tp = i + 4
 c ...
-        call sfbar2_m(hp,hpx,ri,.true.,.true.)
+        call sfbar2_m(hp,hpx,0.d0,.false.,.true.)
         hpx(1:2)= hpx(1:2)/det
 c ... p nos pontos de integracao
         call darcy_vel_1D(perm,hpx,u(4),2,p(tp))  
