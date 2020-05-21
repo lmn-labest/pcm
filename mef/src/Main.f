@@ -147,9 +147,9 @@ c
 c ... Macro-comandos disponiveis:
 c
       data nmc /40/
-      data macro/'loop    ','hextotet','mesh    '
+      data macro/'loop    ','        ','mesh    '
      1          ,'solv    ','dt      ','pgeo    '
-     2          ,'presolv ','block_pu','gravity '
+     2          ,'        ','block_pu','gravity '
      3          ,'conseq  ','solver  ','deltatc '
      4          ,'        ','pcolors ','        '
      5          ,'pres    ','solvt   ','solvm   '
