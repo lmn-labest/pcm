@@ -1,14 +1,14 @@
       subroutine rdat_pcm(nnode     ,nnodev    ,numel      ,numat
-     1                  ,nen       ,nenv      ,ntn        ,ndf
-     2                  ,ndm       ,nst       ,i_ix       ,i_ie 
-     3                  ,i_inum    ,i_e       ,i_x        ,i_id 
-     4                  ,i_nload   ,i_eload   ,i_eloadp   ,i_f
-     5                  ,i_u       ,i_u0      ,i_tx0      ,i_dp
-     6                  ,i_v
-     6                  ,i_tx1p    ,i_tx2p    ,i_epsp     ,i_plastic
-     7                  ,i_porosity,i_fnno    ,i_elplastic,i_vpropel
-     8                  ,fstress0  ,fporomec  ,print_quad ,plastic
-     9                  ,vprop     ,cc_macros ,nin     )
+     1                  ,nen        ,nenv      ,ntn        ,ndf
+     2                  ,ndm        ,nst       ,i_ix       ,i_ie 
+     3                  ,i_inum     ,i_e       ,i_x        ,i_id 
+     4                  ,i_nload    ,i_eload   ,i_eloadp   ,i_f
+     5                  ,i_u        ,i_u0      ,i_tx0      ,i_dp
+     6                  ,i_vel_darcy,i_tx1p    ,i_tx2p     ,i_epsp    
+     7                  ,i_plastic  ,i_v
+     8                  ,i_porosity ,i_fnno    ,i_elplastic,i_vpropel
+     9                  ,fstress0   ,fporomec  ,print_quad ,plastic
+     1                  ,vprop      ,cc_macros ,nin     )
 c **********************************************************************
 c * Data de criacao    : 10/01/2016                                    *
 c * Data de modificaco : 20/05/2020                                    *
@@ -43,7 +43,7 @@ c * i_x     - ponteiro para o arranjo x                                *
 c * i_f     - ponteiro para o arranjo f (poro_mecanico)                *
 c * i_u     - ponteiro para o arranjo u (poro_mecanico)                *
 c * i_u0    - ponteiro para o arranjo u0(poro_mecanico)                *
-c * i_v     - ponteiro para o arranjo v (termico)                      *
+c * i_vel_darcy - ponteiro para o arranjo vel_darcy (poro_mecanico)    *
 c * i_tx0   - ponteiro para o arranjo tx0(poro_mecanico)               *
 c * i_dp    - ponteiro para o arranjo deltaP(poro_mecanico)            *
 c * i_txp1  - ponteiro para o arranjo txp(poro_mecanico)               *
@@ -51,6 +51,7 @@ c * i_txp2  - ponteiro para o arranjo txp(poro_mecanico)               *
 c * i_epsp  - ponteiro para o arranjo espp(poro_mecanico)              *
 c * i_plastic   - ponteiro para o arranjo espp(poro_mecanico)          *
 c * i_porosity  - ponteiro para o arranjo espp(poro_mecanico)          *
+c * i_v     - ponteiro para o arranjo v (termico)                      *
 c * i_fnno      - ponteiro para o arranjo fnno                         *
 c * i_elplastic - ponteiro para o arranjo elplastic                    *
 c * i_vporel    - ponteiro para o arranjo vpropel                      *
@@ -106,6 +107,7 @@ c ... ponteiros
       integer*8 i_u,i_u0,i_tx0,i_tx1p,i_tx2p,i_epsp,i_plastic,i_dp
       integer*8 i_ix,i_id,i_ie,i_porosity,i_elplastic,i_vpropel
       integer*8 i_nelcon,i_nodcon,i_nincid,i_incid,i_fnno,i_aux,i_v
+      integer*8 i_vel_darcy
 c ......................................................................
       integer nin
       integer j,nmc,totnel,nmacros,itmp
@@ -215,29 +217,33 @@ c
 c     Alocacao de arranjos na memoria: poromecanico
 c     elastic
 c     ---------------------------------------------------------------
-c     | ix | ie | e | x | eload |
+c     | ix | ie | e | x | eload | vel_darcy |
 c     ---------------------------------------------------------------
 c     plastic
 c     ---------------------------------------------------------------
-c     | ix | ie | e | x | eload | txp1 | txp2 | espsp | plastcic |
+c     | ix | ie | e | x | eload | vel_darcy | txp1 | txp2 | espsp |
+c
+c     | plastcic |
 c     ---------------------------------------------------------------
 c     proppriedades variaveis com a porosidade
 c     ---------------------------------------------------------------
 c     | vpropel |                                                    
 c     ---------------------------------------------------------------
       if(fporomec) then
-        i_ix    = alloc_4('ix      ',nen+1,numel)
-        i_ie    = alloc_4('ie      ',    1,numat)
-        i_eload = alloc_4('eload   ',    7,numel)
-        i_eloadp= alloc_4('eloadp  ',    7,numel)
-        i_e     = alloc_8('e       ', prop,numat)
-        i_x     = alloc_8('x       ',  ndm,nnodev)
+        i_ix        = alloc_4('ix      ',nen+1,numel)
+        i_ie        = alloc_4('ie      ',    1,numat)
+        i_eload     = alloc_4('eload   ',    7,numel)
+        i_eloadp    = alloc_4('eloadp  ',    7,numel)
+        i_e         = alloc_8('e       ', prop,numat)
+        i_x         = alloc_8('x       ',  ndm,nnodev)
+        i_vel_darcy = alloc_8('vel_dar ',  ndm,nnodev)
         call mzero(ia(i_ix),numel*(nen+1))
         call mzero(ia(i_ie),numat) 
         call azero(ia(i_e),numat*prop)
         call mzero(ia(i_eload),numel*7)
         call mzero(ia(i_eloadp),numel*7)
-        call azero(ia(i_x),nnodev*ndm)        
+        call azero(ia(i_x),nnodev*ndm)       
+        call azero(ia(i_vel_darcy),nnodev*ndm)    
         if(plastic) then  
           i_elplastic= alloc_4('elplast ',      1,numel)
           i_tx1p     = alloc_8('tx1p    ',ntn*npi,numel)

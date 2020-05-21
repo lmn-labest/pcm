@@ -430,6 +430,201 @@ c ...
 c **********************************************************************
 c
 c **********************************************************************
+      subroutine darcy_vel(ix    ,x    ,e    ,ie
+     1                    ,ic    ,xl   ,ul   ,dpl    ,vpropell 
+     3                    ,pl    ,u    ,dp   ,vpropel
+     4                    ,flux  ,fnno
+     5                    ,nnode ,numel,nen  ,nenv
+     6                    ,ndm   ,ndf  ,nst  ,ntn  ,npi
+     7                    ,isw   ,ilib ,vprop)
+c **********************************************************************
+c * Data de criacao    : 21/05/2020                                    *
+c * Data de modificaco : 00/00/0000                                    * 
+c * ------------------------------------------------------------------ * 
+c * DARCY_VEL: caluclo dos fluxo nodal nos vertices (velocidade)       *
+c * ------------------------------------------------------------------ * 
+c * Parametros de entrada:                                             *
+c * ------------------------------------------------------------------ * 
+c * ix(nen+1,numel)  - conetividades nodais                            *
+c * x(ndm,nnode)     - coordenadas nodais                              *
+c * e(10,numat)      - constantes fisicas dos materiais                *
+c * ie(numat)        - tipo de elemento                                *
+c * ic(nnode)        - nao definido                                    *
+c * xl(ndm,nen)      - nao definido                                    *
+c * ul(ndf,nen)      - nao definido                                    *
+c * pl(ntn*nen)      - nao definido                                    *
+c * dpl(nst)         - nao definido                                    *
+c * vpropell         - nao definido                                    *
+c * u(ndf,nnode)     - solucao corrente                                *
+c * dp(nnodev)       - delta p ( p(n  ,0  ) - p(0) )                   *
+c * vpropel(7,npi,*) - propriedades variaveis por pontos de itegracao  *
+c *     1 - porosideade nos pontos de integracao                       *
+c *     2 - permeabilidade konzey-Carman                               *
+c *     3 - massa especifica                                           *
+c *     4 - modulo volumetrico                                         *
+c *     5 - modulo de cisalhamento                                     *
+c *     6 - inverso do modulo de biot                                  *
+c *     7 - coeficiente de biot                                        *
+c * flux(ndm,nnodev) - nao definido                                    *
+c * fnno             -  identifica dos nos de vertices                 *
+c *                     ( 1 - vertice | 0 )                            *
+c * nnodev           - numero de nos de vertices                       *
+c * numel            - numero de elementos                             *
+c * nen              - numero max. de nos por elemento                 *
+c * nenv             - numero de nos de vertice por elemento           *
+c * ndf              - numero max. de graus de liberdade por no        *
+c * nst              - nst = nen*ndf                                   *
+c * ndm              - dimensao                                        *
+c * ndf              - numero max. de graus de liberdade por no        *
+c * ntn              - numero max. de derivadas por no                 *
+c * npi              - numero de pontos de integracao por elemento     *
+c * nprcs            - numero de processos                             *
+c * isw              - codigo de instrucao para as rotinas             *
+c *                    de elemento                                     *
+c * ilib             - determina a biblioteca do elemento              *
+c * vprop(*) -                                                         * 
+c *           1 - prop variavel                 (true|false)           *
+c *           2 - konzey-Caraman                (true|false)           *
+c *           3 - massa especifica homogenizada (true|false)           *
+c *           4 - mecanico                      (true|false)           *
+c * ------------------------------------------------------------------ * 
+c * Parametros de saida:                                               *
+c * ------------------------------------------------------------------ * 
+c * t(ntn   ,nnodev) - tensoes medias nodais                           *
+c * tb(ntn  ,nnodev) - tensoes efetivas biot medias nodais             *
+c * te(ntn  ,nnodev) - tensoes efetivas medias nodais                  *
+c * flux(ndm,nnodev) - fluxo medias nodais                             *
+c * ------------------------------------------------------------------ * 
+c * OBS:                                                               *
+c * ------------------------------------------------------------------ * 
+c * Calcula as tensoes apenas nos vertices                             *     
+c **********************************************************************
+      implicit none
+      include 'termprop.fi'
+c ... mpi
+      integer*8 i_xfi
+      logical novlp
+c ...
+      integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi
+c ......................................................................      
+      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer nel,ma,iel,i,j,k,k1,no,kk
+      integer ilib,isw,desloc1,desloc2
+      real*8  xl(ndm,nenv),ul(nst),dpl(nenv),pl(nenv*(2*ntn+ndm))
+      real*8  vpropell(nvprop,npi)
+      real*8  x(ndm,*),e(prop,*),vpropel(nvprop,npi,*)
+      real*8  u(ndf,*),el(prop) ,dp(*) 
+      real*8  flux(ndm,*)
+      logical vprop(*)
+c ...
+      logical ldum
+      integer idum
+      real*8 ddum
+c ......................................................................
+c
+c ...
+c     p(1:nenv*ndm)                    - flux de darcy (velocidade)            
+c ......................................................................
+c
+c ...
+      do 30 i = 1, nnode        
+        ic(i) = 0
+c ... flux
+        do 20 j = 1, ndm
+          flux(j,i) = 0.d0
+   20   continue 
+c ......................................................................
+   30 continue 
+c ......................................................................
+c
+c ... Loop nos elementos:
+      do 900 nel = 1, numel
+        kk = 0
+c ...
+        do 300 i = 1, nenv*ndm
+          pl(i) = 0.d0
+  300   continue
+c .......................................................................
+c
+c ... loop nos arranjos locais 
+        do 400 i = 1, nen
+          no = ix(i,nel)
+c ... loop nos deslocamentos
+          do 410 j = 1, ndf - 1
+            kk     = kk + 1
+            ul(kk) = u(j,no)
+  410     continue
+c ......................................................................
+  400   continue
+c ......................................................................
+c
+c ... loop nas pressoes
+        do 510 i = 1, nenv
+          no     = ix(i,nel)
+          kk     = kk + 1
+          ul(kk) = u(ndf,no)
+          dpl(i) = dp(no)
+          do 500 j = 1, ndm
+            xl(j,i) = x(j,no)
+  500     continue
+  510   continue
+c ......................................................................
+c
+c ... propriedade variavel 
+          if(vprop(1)) then
+            do j = 1, npi
+              vpropell(1:nvprop,j) = vpropel(1:nvprop,j,nel)
+            enddo
+          endif
+c ......................................................................     
+c
+c ...... form element array
+        ma  = ix(nen+1,nel)
+        iel = ie(ma)      
+        el(1:prop) = e(1:prop,ma)
+c ......................................................................
+c
+c ...... Chama biblioteca de elementos:
+        call elmlib_pm(el  ,idum,idum
+     1                ,xl  ,ul  ,ddum
+     2                ,dpl ,pl  ,ddum,ddum,ddum 
+     3                ,ddum,ddum,vpropel  ,idum
+     4                ,ndm ,nst ,nel,iel,isw 
+     5                ,ma  ,idum,ilib,ldum)
+c ......................................................................
+c
+c ...... media do vetor global
+        do 800 i = 1, nenv
+           no = ix(i,nel)
+           if (no .le. 0) go to 800
+           ic(no) = ic(no) + 1  
+           do 710 j = 1, ndm
+              k = (i-1)*ndm + j 
+              flux(j,no) = flux(j,no) + pl(k)
+  710      continue
+  800   continue
+  900 continue
+c .......................................................................
+c
+c .......................................................................
+      do 1000 i = 1, nnode
+c ... no de vertice
+        if(fnno(i) .eq. 1) then
+c ... fluxo
+          do 1030 j = 1, ndm
+            flux(j,i) = flux(j,i)/ic(i)
+ 1030     continue 
+c ......................................................................
+        endif
+ 1000 continue
+c ......................................................................
+c
+c ......................................................................
+      return
+      end      
+c **********************************************************************
+c
+c **********************************************************************
       subroutine tform_pm(ix    ,x    ,e    ,ie
      1                   ,ic    ,xl   ,ul   ,dpl     ,tx1l   
      2                   ,vpropell 

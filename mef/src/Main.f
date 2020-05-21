@@ -124,7 +124,7 @@ c ... forcas e graus de liberdade
       integer*8 i_f
       integer*8 i_u,i_u0,i_tx0,i_tx1p,i_tx2p,i_plastic,i_depsp,i_dp
       integer*8 i_tx,i_txb,i_txe,i_flux,i_pc,i_elplastic
-      integer*8 i_v
+      integer*8 i_v,i_darcy_vel
 c ... sistema de equacoes
       integer*8 i_ia,i_ja,i_ad,i_au,i_al,i_b,i_b0,i_x0,i_bst0
 c ... precondicionador
@@ -388,7 +388,7 @@ c ......................................................................
      2     ,700 , 800, 900 !'        ','block_pu','gravity '
      3     ,1000,1100,1200 !'conseq  ','solver  ','deltatc '
      4     ,1300,1400,1500 !'        ','        ','        '
-     5     ,1600,1700,1800 !'        ','        ','solvm   '
+     5     ,1600,1700,1800 !'ppcmres ','        ','solvm   '
      6     ,1900,2000,2100 !'        ','        ','        '
      7     ,2200,2300,2400 !'        ','        ','        '
      8     ,2500,2600,2700 !'        ','nl      ','        '
@@ -455,8 +455,8 @@ c.... Leitura de dados:
      3         ,i_inum      ,i_e      ,i_x        ,i_id  
      4         ,i_nload     ,i_eload  ,i_eloadp   ,i_f  
      5         ,i_u         ,i_u0     ,i_tx0      ,i_dp
-     6         ,i_v 
-     7         ,i_tx1p      ,i_tx2p   ,i_depsp    ,i_plastic
+     6         ,i_darcy_vel ,i_tx1p   ,i_tx2p     ,i_depsp   
+     7         ,i_plastic   ,i_v
      8         ,i_porosity  ,i_fnno   ,i_elplastic,i_vpropel
      9         ,fstress0    ,fporomec ,print_flag(1),fplastic,vprop
      1         ,cc_macros   ,nin)
@@ -465,7 +465,9 @@ c    | ix | id | ie | nload | eload | eloadp| inum | e | x | f | u |
 c    -----------------------------------------------------------------
 c
 c    -----------------------------------------------------------------
-c    | u0 | v | tx0 | | dp | tx1p | tx2p | epsp | plastic | porosity | 
+c    | u0 | v | tx0 | | dp | tx1p | tx2p | epsp | darcy_vel | plastic |
+c
+c    | porosity | 
 c    -----------------------------------------------------------------
 c
 c    -----------------------------------------------------------------
@@ -968,6 +970,19 @@ c     do passo de tempo anterior 1 -> 2
 c .....................................................................
       vectime = vectime + get_time()-timei
 c .....................................................................
+c
+c ... calculo da velociade de darcy por no
+      i_ic        = alloc_4('ic      ',    1,nnode)
+      call darcy_vel(ia(i_ix)   , ia(i_x) , ia(i_e) , ia(i_ie)
+     1  ,ia(i_ic)       , ia(i_xl), ia(i_ul), ia(i_dpl)  ,ia(i_vpropell)
+     2  ,ia(i_txl)      ,ia(i_u) ,ia(i_dp) ,ia(i_vpropel)
+     3  ,ia(i_darcy_vel),ia(i_fnno) 
+     4  ,nnode          ,numel     ,nen       ,nenv
+     6  ,ndm            ,ndf       ,nst       ,ntn  ,npi
+     7  ,8              ,ilib      ,vprop)
+      i_ic       = dealloc('ic      ')
+      call printv(ia(i_darcy_vel),nnodev)
+c .....................................................................
       goto 50 
 c ----------------------------------------------------------------------
 c
@@ -1133,7 +1148,7 @@ c ... Macro-comando: PRES - impressao dos resultados
 c
 c ......................................................................
  1600 continue
-      print*,'Macro PRES'
+      print*,'Macro PPCMRES'
 c ... print_flag (true| false)
 c     2  - desloc
 c     3  - pressao 
@@ -1141,7 +1156,7 @@ c     4  - delta pressa
 c ... 5  - stress Total
 c ... 6  - stress Biot
 c ... 7  - stress Terzaghi
-c ... 8  - fluxo de darcy 
+c ... 8  - fluxo de darcy (velocidade)
 c ... 9  - delta porosidade
 c ...10  - pressao de consolidacao
 c
@@ -1152,18 +1167,7 @@ c ...
       i_txe  = 1
       i_txb  = 1
       i_flux = 1
-      i_ic   = 1
-      i_g    = 1
-      i_g1   = 1
-      i_g2   = 1
-      i_g3   = 1
-      i_g4   = 1
-      i_g5   = 1
-      i_g6   = 1
-      i_g7   = 1
-      i_g8   = 1
-      i_g9   = 1
-      i_g10  = 1
+      i_ic   = 1    
 c ......................................................................
 c
 c ...
@@ -1215,10 +1219,10 @@ c ...
 c ......................................................................
 c
 c ...
-      call write_mesh_res_pm(ia(i_ix),ia(i_x)    ,ia(i_u)  ,ia(i_dp)
+      call write_mesh_res_pcm(ia(i_ix),ia(i_x)    ,ia(i_u)  ,ia(i_dp)
      1              ,ia(i_pc)       ,ia(i_elplastic)
      2              ,ia(i_porosity) ,ia(i_tx)   ,ia(i_txb),ia(i_txe)
-     3              ,ia(i_flux)     ,print_nnode,numel    ,istep   
+     3              ,ia(i_darcy_vel),print_nnode,numel    ,istep   
      4              ,t              ,nen        ,ndm      ,ndf   
      5              ,ntn            ,fname      ,prename   
      6              ,bvtk           ,legacy_vtk ,print_flag,nplot)
