@@ -131,9 +131,6 @@ c ... precondicionador
       integer*8 i_m
 c ... variacao das propriedades por elemento
       integer*8 i_vpropel
-c ... arranjos globais (MPI - escrita)
-      integer*8 i_g,i_g1,i_g2,i_g3,i_g4,i_g5,i_g6,i_g7,i_g8,i_g9,i_g10
-      integer*8 i_g11
 c ... coo
       integer*8 i_lin,i_col,i_acoo
       integer*8 i_linuu,i_coluu,i_acoouu
@@ -976,7 +973,7 @@ c ... calculo da velociade de darcy por no
       call darcy_vel(ia(i_ix)   , ia(i_x) , ia(i_e) , ia(i_ie)
      1  ,ia(i_ic)       , ia(i_xl), ia(i_ul), ia(i_dpl)  ,ia(i_vpropell)
      2  ,ia(i_txl)      ,ia(i_u) ,ia(i_dp) ,ia(i_vpropel)
-     3  ,ia(i_darcy_vel),ia(i_fnno) 
+     3  ,ia(i_darcy_vel),ia(i_fnno),ia(i_nload) 
      4  ,nnode          ,numel     ,nen       ,nenv
      6  ,ndm            ,ndf       ,nst       ,ntn  ,npi
      7  ,8              ,ilib      ,vprop)

@@ -433,7 +433,7 @@ c **********************************************************************
       subroutine darcy_vel(ix    ,x    ,e    ,ie
      1                    ,ic    ,xl   ,ul   ,dpl    ,vpropell 
      3                    ,pl    ,u    ,dp   ,vpropel
-     4                    ,flux  ,fnno
+     4                    ,flux  ,fnno ,nload
      5                    ,nnode ,numel,nen  ,nenv
      6                    ,ndm   ,ndf  ,nst  ,ntn  ,npi
      7                    ,isw   ,ilib ,vprop)
@@ -468,6 +468,7 @@ c *     7 - coeficiente de biot                                        *
 c * flux(ndm,nnodev) - nao definido                                    *
 c * fnno             -  identifica dos nos de vertices                 *
 c *                     ( 1 - vertice | 0 )                            *
+c * nload(ndf,nnode) - numero da carga nodal                           *
 c * nnodev           - numero de nos de vertices                       *
 c * numel            - numero de elementos                             *
 c * nen              - numero max. de nos por elemento                 *
@@ -505,16 +506,16 @@ c ... mpi
       integer*8 i_xfi
       logical novlp
 c ...
-      integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi
+      integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi,nc
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer ix(nen+1,*),ie(*),ic(*),fnno(*),nload(ndf,*)
       integer nel,ma,iel,i,j,k,k1,no,kk
-      integer ilib,isw,desloc1,desloc2
+      integer ilib,isw
       real*8  xl(ndm,nenv),ul(nst),dpl(nenv),pl(nenv*(2*ntn+ndm))
       real*8  vpropell(nvprop,npi)
       real*8  x(ndm,*),e(prop,*),vpropel(nvprop,npi,*)
       real*8  u(ndf,*),el(prop) ,dp(*) 
-      real*8  flux(ndm,*)
+      real*8  flux(ndm,*), c
       logical vprop(*)
 c ...
       logical ldum
@@ -619,6 +620,16 @@ c ......................................................................
  1000 continue
 c ......................................................................
 c
+c ... regulariza a velocidade de darcy no contorno
+      do i = 1, nnode
+        if(fnno(i) .eq. 1) then
+          nc = nload(ndf,i)          
+          if(nc .ne. 0) then  
+            call tload(nc,0,ddum,ddum,c,ddum,0)          
+            flux(i,1:ndm) = c
+          endif
+        endif
+      enddo
 c ......................................................................
       return
       end      

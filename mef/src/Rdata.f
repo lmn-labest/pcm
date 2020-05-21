@@ -1315,7 +1315,7 @@ c ...    tipo da carga:
          ty =  load(1,i)
 c .....................................................................
 c
-c ...   
+c ...  carga constante 
          if     (ty .eq. 1) then
 c ...       valor da carga:            
             call readmacro(nin,.false.)
@@ -1409,6 +1409,10 @@ c ...       numero de parcelas:
                write(string,'(30a)') (word(j),j=1,30)
                read(string,*,err = 200,end = 200) fload(k,2,i)
             enddo     
+c .....................................................................
+c
+c ... velocidade de darcy nulo
+         elseif (ty .eq. 9) then  
 c .....................................................................
 c
 c ... 

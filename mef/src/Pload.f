@@ -88,69 +88,6 @@ c.......................................................................
       return
       end
 c **********************************************************************
-c 
-c **********************************************************************
-      subroutine pload_mec(x     ,id   ,f  ,u,b
-     .                    ,nload ,nnode,ndf)
-c **********************************************************************
-c * Data de criacao    : 09/04/2016                                    *
-c * Data de modificaco : 05/04/2019                                    *
-c * ------------------------------------------------------------------ *
-c * PLOAD: Monta o vetor de forcas do problema mecanico estatico       *
-c * ------------------------------------------------------------------ *
-c * Parametros de entrada:                                             *
-c * ------------------------------------------------------------------ *
-c * x(ndm)           - coordenada do ponto  
-c * id(ndf,nnode)    - numeracao das equacoes                          *
-c * f(ndf,nnode)     - cargas concentradas e incognitas prescritas     *
-c * u(ndf,nnode)     - graus de liberdade                              *
-c * b(neq)           - nao definido                                    *
-c * nload(ndf,nnode) - numero da carga nodal                           *
-c * nnode            - numero de nos acessados na particao             *
-c * ndf              - numero de graus de liberdade por no             *
-c * ------------------------------------------------------------------ *
-c * Parametros de saida:                                               *
-c * ------------------------------------------------------------------ *
-c * b - vetor de forcas                                                *
-c * ------------------------------------------------------------------ *
-c * OBS:                                                               *
-c * ------------------------------------------------------------------ *
-c **********************************************************************
-      implicit none
-      include 'transiente.fi'
-      integer id(ndf,*),nload(ndf,*),nnode,ndf,i,j,k,nc
-      real*8  f(ndf,*),u(ndf,*),b(*),c,vc(3),a,x(*)
-c.......................................................................
-c
-c ... Cargas nodais e desloc. prescritos variaveis no tempo:
-c
-      do 110 i = 1, nnode
-        do 100 j = 1, ndf
-          nc = nload(j,i)
-          if(nc .gt. 0) then
-            call tload(nc,t,x,u(j,i),c,vc,0)
-            f(j,i) = c
-          endif
-  100   continue
-  110 continue
-c.......................................................................
-c
-c ... Cargas nodais e deslocamentos prescritos no tempo t:
-c
-      a = alfa*dt
-      do 200 i = 1, nnode
-        do 200 j = 1, ndf
-         k = id(j,i)
-         if (k .gt. 0) then
-            b(k) = f(j,i)
-         else
-            u(j,i) =  f(j,i)
-         endif
-  200 continue
-c.......................................................................
-      return
-      end
-c **********************************************************************
 c                                                                       
 c **********************************************************************
       subroutine pload(x   ,id   ,f,u,v,b
@@ -330,6 +267,11 @@ c
 c ...  kdu/dx = emiss * const(Stef-Boltz) *(uext4-u4)+H(uext-u)
       elseif(itype .eq. 8) then
         call interpol(fload(1,1,nc),fload(1,2,nc),t,nparc,c)
+c ......................................................................
+c
+c ....  velocidade de darcy nulo
+      elseif(itype .eq. 9) then
+        c = 0.0d0
 c ......................................................................
 c
 c ... carga interpolacao no tempo  
