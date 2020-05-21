@@ -151,7 +151,7 @@ c
      1          ,'solv    ','dt      ','pgeo    '
      2          ,'presolv ','block_pu','gravity '
      3          ,'conseq  ','solver  ','deltatc '
-     4          ,'pcoo    ','pcolors ','        '
+     4          ,'        ','pcolors ','        '
      5          ,'pres    ','solvt   ','solvm   '
      6          ,'pmecres ','ptermres','        '
      7          ,'        ','        ','        '
@@ -1107,12 +1107,10 @@ c ......................................................................
       goto 50
 c ----------------------------------------------------------------------
 c
-c ... Macro-comando: PCOO - impressao da matriz no formato COO
+c ... Macro-comando: 
 c
 c ......................................................................
  1300 continue
-      print*, 'Macro PCOO'
-      fcoo = .true.
       goto 50     
 c ----------------------------------------------------------------------
 c
