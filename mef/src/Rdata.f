@@ -216,7 +216,7 @@ c     | ix | ie | e | x | vel_darcy |
 c     ---------------------------------------------------------------
 c
       i_ix        = alloc_4('ix      ',nen+1,numel)
-      i_ie        = alloc_4('ie      ',    1,numat)
+      i_ie        = alloc_4('ie      ',    2,numat)
       i_e         = alloc_8('e       ', prop,numat)
       i_x         = alloc_8('x       ',  ndm,nnodev)
       i_vel_darcy = alloc_8('vel_dar ',  ndm,nnodev)
@@ -966,7 +966,7 @@ c **********************************************************************
       include 'string.fi'
       include 'termprop.fi'
       character*80 fname
-      integer ie(*),numat,nin,i,j,m,ma,my_id
+      integer ie(2,*),numat,nin,i,j,m,ma,my_id
       integer nincl /12/
       real*8  e(prop,*)
       character*30 string
@@ -983,7 +983,7 @@ c ... abrindo arquivo
          call readmacro(nin,.false.)
          write(fname,'(80a)') (word(j),j=1,strl)
          open(nincl, file= fname,status= 'old',err=900,action='read')
-         call file_prop(ie(ma),e(1,ma),my_id,nincl)
+         call file_prop(ie(1,ma),e(1,ma),my_id,nincl)
          close(nincl)
 c .....................................................................
 c
@@ -2238,7 +2238,7 @@ c *********************************************************************
 c
 c *********************************************************************
 c * Data de criacao    : 20/03/2017                                   *
-c * Data de modificaco : 24/05/2020                                   *
+c * Data de modificaco : 25/05/2020                                   *
 c * ------------------------------------------------------------------*
 c * file_prop : : leitura do arquivo com as propriedades do material  *
 c * ------------------------------------------------------------------*
@@ -2260,11 +2260,11 @@ c *********************************************************************
       implicit none
       include 'string.fi'
       character*15 string,macro(15)
-      character*16 ex(11)
+      character*16 ex(12)
       character*80 fname
-      logical etyp,fread(15)
+      logical etyp(2),fread(15)
       real*8 e(*)
-      integer i,j,nmacro,etype
+      integer i,j,nmacro,etype(2)
       integer nin
       integer my_id
       data nmacro /15/
@@ -2272,19 +2272,20 @@ c *********************************************************************
      1           'mbiot          ','cbiot          ','density        ',
      2           'fdensity       ','porosity       ','l_plastic      ',
      3           'k_plastic      ','mcs            ','pc0            ',
-     4           'elType         ','dCO2           ','               '/
+     4           'el_type_mp     ','dCO2           ','el_type_tr     '/
 c ... exemplo
-      data ex/'elType        37',
-     1        'modE         1.0',
-     2        'poisson      0.3',
-     3        'permeability 1.0',
-     4        'mbiot        1.0',
-     5        'cbiot        1.0',
-     6        'density      1.0', 
-     7        'fdensity     1.0',
-     8        'porosity     0.72',
-     9        'dCO2         1.0', 
-     1        'end             '/
+      data ex/'el_type_mp    12',    
+     1        'el_type_tr     1',    
+     2        'modE         1.0',    
+     3        'poisson      0.3',    
+     4        'permeability 1.0',    
+     5        'mbiot        1.0',    
+     6        'cbiot        1.0',    
+     7        'density      1.0',    
+     8        'fdensity     1.0',    
+     9        'porosity     0.72',   
+     1        'dCO2         1.0',    
+     2        'end             '/
 c .....................................................................
 c
 c ...
@@ -2400,13 +2401,13 @@ c ... pc0
             read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
-c ... elType   
+c ... el_Type_pm   
          else if (string .eq. macro(13)) then
             i = 13
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) etype
+            read(string,*,err = 100,end = 100) etype(1)
 c .....................................................................
 c
 c ... dCO2     
@@ -2417,6 +2418,15 @@ c ... dCO2
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
+c
+c ... el_Type_tr   
+         else if (string .eq. macro(15)) then
+            i = 15
+            fread(i) = .true.
+            call readmacro(nin,.false.)
+            write(string,'(15a)') (word(j),j=1,15)            
+            read(string,*,err = 100,end = 100) etype(2)
+c .....................................................................
          endif 
 c .....................................................................
 c
@@ -2426,9 +2436,16 @@ c ...
       end do
 c ......................................................................
 c
-c ...
+c ......................................................................
+      if( (.not. fread(13)) .and. (.not. fread(15)) ) then
+        write(*,'(1x,a,a)') 'Property missing: ',trim(macro(13))
+        write(*,'(1x,a,a)') 'Property missing: ',trim(macro(15))
+        call stop_mef()      
+      endif
+c ......................................................................
+c
 c ... elemento elasticos
-      if( (etype .eq. 16) .or. (etype .eq. 17) ) then
+      if( etype(1) .eq. 12 ) then
         do i = 1, 7
           if(.not. fread(i)) then
             write(*,'(1x,a,a)') 'Property missing: ',trim(macro(i))
@@ -2437,22 +2454,9 @@ c ... elemento elasticos
         enddo
 c ......................................................................
 c
-c ... elementos plasticos
-      else if( (etype .eq. 36) .or. (etype .eq. 37) ) then
-        do i = 1, 12
-          if(.not. fread(i)) then
-            write(*,'(1x,a,a)') 'Property missing: ',trim(macro(i))
-            call stop_mef()      
-          endif
-        enddo
-c ......................................................................
-c
 c ... 
       else
-        if(.not. fread(13)) then
-          write(*,'(1x,a,a)') 'Property missing: ',trim(macro(13))
-          call stop_mef()      
-        endif
+
       endif
 c ......................................................................
 c

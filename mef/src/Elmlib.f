@@ -50,7 +50,6 @@ c ......................................................................
       call stop_mef()
 c ......................................................................
   100 continue
- 1200 continue
       if (ilib .eq. 1) then  
 c     Elemento unidimensional 2 nos (Garlekin)
         call elmt01_trans(e, iq, x, u, v, vel, p, s, ndm, nst, nel, isw)
@@ -69,6 +68,7 @@ c ... campos reservados para expancoes futuras de elementos
   900 continue
  1000 continue
  1100 continue
+ 1200 continue
  1300 continue
  1400 continue
  1500 continue

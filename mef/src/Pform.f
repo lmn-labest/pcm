@@ -83,7 +83,7 @@ c **********************************************************************
       integer numel,nen,nenv,ndf,ndm,nst,nad,nadr,imat
       integer stge,isw,numat,nlit
       integer neq
-      integer ix(imat,*),iq(7,*),ie(*),id(*),ld(nst)
+      integer ix(imat,*),iq(7,*),ie(2,*),id(*),ld(nst)
       integer ia(*),ja(*)
       integer iel,ma,nel,no,i,j,k,kk,ilib
       integer i_colorg(2,*),i_elcolor(*),numcolors
@@ -145,8 +145,8 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
            ma  = ix(imat,nel)
-           iel = ie(ma)
-           do i = 1, prop
+           iel = ie(2, ma)
+           do i = 14, 15
              el(i) = e(i,ma)
            enddo   
 c ......................................................................
@@ -199,7 +199,7 @@ c .....................................................................
 c
 c ...... Arranjos de elemento:
           ma  = ix(imat,nel)
-          iel = ie(ma)
+          iel = ie(2, ma)
           do i = 14, 15
             el(i) = e(i,ma)
           enddo   
@@ -258,7 +258,7 @@ c * ------------------------------------------------------------------ *
 c * ix(nen+1,numel) - conetividades nodais                             *
 c * eloads(7,numel)   - cargas nos elementos mecanico                  *
 c * eloadsp(7,numel)  - cargas nos elementos hidraulico                *
-c * ie(numat)       - tipo de elemento                                 *
+c * ie(*,numat)     - tipo de elemento                                 *
 c * e(10,numat)     - constantes fisicas dos materiais                 *
 c * x(ndm,nnode)    - coordenadas nodais                               *
 c * id(ndf,nnode)   - numeracao global das equacoes                    *
@@ -370,7 +370,7 @@ c **********************************************************************
       integer stge,isw,numat,nlit,ntn,npi
       integer neq,nequ,neqp,n_blocks_pu
       integer ix(nen+1,*),eloads(7,*),eloadsp(7,*)
-      integer ie(*),id(ndf,*),ld(nst)
+      integer ie(2,*),id(ndf,*),ld(nst)
       integer ja(*),elplastic(*)
       integer iel,ma,nel,no,i,j,k,kk,ilib
       integer i_colorg(2,*),i_elcolor(*),numcolors
@@ -485,7 +485,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
            ma  = ix(nen+1,nel)
-           iel = ie(ma)
+           iel = ie(1,ma)
            el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -607,7 +607,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
           ma         = ix(nen+1,nel)
-          iel        = ie(ma)
+          iel        = ie(1,ma)
           el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -738,7 +738,7 @@ c ... mpi
 c ...
       integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi,nc
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(*),fnno(*),nload(ndf,*)
+      integer ix(nen+1,*),ie(2,*),ic(*),fnno(*),nload(ndf,*)
       integer nel,ma,iel,i,j,k,k1,no,kk
       integer ilib,isw
       real*8  xl(ndm,nenv),ul(nst),dpl(nenv),pl(nenv*(2*ntn+ndm))
@@ -811,7 +811,7 @@ c ......................................................................
 c
 c ...... form element array
         ma  = ix(nen+1,nel)
-        iel = ie(ma)      
+        iel = ie(1,ma)      
         el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -954,7 +954,7 @@ c ... mpi
 c ...
       integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer ix(nen+1,*),ie(2,*),ic(*),fnno(*)
       integer nel,ma,iel,i,j,k,k1,no,kk
       integer ilib,isw,desloc1,desloc2
       real*8  xl(ndm,nenv),ul(nst),dpl(nenv),pl(nenv*(2*ntn+ndm))
@@ -1047,7 +1047,7 @@ c ......................................................................
 c
 c ...... form element array
         ma  = ix(nen+1,nel)
-        iel = ie(ma)      
+        iel = ie(1,ma)      
         el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -1127,7 +1127,7 @@ c * ------------------------------------------------------------------ *
 c * Parametros de entrada:                                             *
 c * ------------------------------------------------------------------ *
 c * ix(nen+1,numel) - conetividades nodais                             *
-c * ie(numat)       - tipo de elemento                                 *
+c * ie(2,numat)       - tipo de elemento                               *
 c * e(10,numat)     - constantes fisicas dos materiais                 *
 c * x(ndm,nnode)    - coordenadas nodais                               *
 c * id(ndf,nnode)   - numeracao global das equacoes                    *
@@ -1182,7 +1182,7 @@ c **********************************************************************
       integer numel,nen,nenv,ntn,ndf,ndm,nst
       integer stge,numat,npi
       integer neq
-      integer ix(nen+1,*),ie(*),id(ndf,*),ld(nst)
+      integer ix(nen+1,*),ie(2,*),id(ndf,*),ld(nst)
       integer iel,ma,nel,no,i,j,k,kk,ilib
       integer ic,jc
       real*8  e(prop,*),x(ndm,*),b(*)
@@ -1232,7 +1232,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
         ma  = ix(nen+1,nel)
-        iel = ie(ma)
+        iel = ie(1,ma)
         el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -1286,7 +1286,7 @@ c * ------------------------------------------------------------------ *
 c * Parametros de entrada:                                             *
 c * ------------------------------------------------------------------ *
 c * ix(nen+1,numel) - conetividades nodais                             *
-c * ie(numat)       - tipo de elemento                                 *
+c * ie(2,numat)       - tipo de elemento                               *
 c * e(10,numat)     - constantes fisicas dos materiais                 *
 c * x(ndm,nnode)    - coordenadas nodais                               *
 c * u(ndf,nnode) - solucao (com valores prescritos)                    *
@@ -1326,7 +1326,7 @@ c **********************************************************************
       integer numel,nen,nenv,ntn,ndf,ndm,nst
       integer stge,numat,npi
       integer neq
-      integer ix(nen+1,*),ie(*)
+      integer ix(nen+1,*),ie(2, *)
       integer iel,ma,nel,no,i,j,k,kk,ilib
       integer ic,jc
       real*8  e(prop,*),x(ndm,*)
@@ -1371,7 +1371,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
         ma  = ix(nen+1,nel)
-        iel = ie(ma)
+        iel = ie(1,ma)
         el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -1481,7 +1481,7 @@ c ... mpi
 c ...
       integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer ix(nen+1,*),ie(2,*),ic(*),fnno(*)
       integer nel,ma,iel,i,j,k,k1,no,kk
       integer ilib,isw
       real*8 xl(ndm,nenv),ul(nst),dpl(nenv),pl(nenv),plasticl(3,npi)
@@ -1555,7 +1555,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
         ma  = ix(nen+1,nel)
-        iel = ie(ma)
+        iel = ie(1,ma)
         el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -1666,7 +1666,7 @@ c ... mpi
 c ...
       integer nnode,numel,nen,nenv,ndf,nst,ndm,npi
 c ......................................................................      
-      integer ix(nen+1,*),ie(*)
+      integer ix(nen+1,*),ie(2,*)
       integer nel,ma,iel,i,j,k,k1,no,kk
       integer ilib,isw
       real*8  xl(ndm,nenv),ul(nst),vpropell(nvprop,*),plasticl(3,npi)
@@ -1726,7 +1726,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
         ma  = ix(nen+1,nel)
-        iel = ie(ma)
+        iel = ie(1,ma)
         el(1:prop) = e(1:prop,ma)
 c ......................................................................
 c
@@ -1814,7 +1814,7 @@ c ... mpi
 c ...
       integer nnode,numel,nen,nenv,ndf,ndm
 c ......................................................................      
-      integer ix(nen+1,*),ie(*),ic(*),fnno(*)
+      integer ix(nen+1,*),ie(2,*),ic(*),fnno(*)
       integer nel,ma,i,no
       real*8  e(prop,*),porosity(*),poro
 c ......................................................................
@@ -1901,7 +1901,7 @@ c ... mpi
 c ...
       integer numel,nen,npi
 c ......................................................................      
-      integer ix(nen+1,*),ie(*)
+      integer ix(nen+1,*),ie(2,*)
       integer nel,ma,i,numat
       real*8  e(prop,*),vpropel(nvprop,npi,*)
       real*8  perm,poro,ym,ps,ibiot,cbiot,ro,rof,lam,mu,k
@@ -2060,7 +2060,7 @@ c ... mpi
 c ...
       integer nnode,numel,nen,nenv,ndf,nst,ndm,ntn,npi
 c ......................................................................      
-      integer ix(nen+1,*),ic(*),fnno(*),ie(*)
+      integer ix(nen+1,*),ic(*),fnno(*),ie(2,*)
       integer nel,ma,iel,i,j,k,k1,no,kk
       integer ilib,isw
       real*8  pl(nenv),plasticl(3,npi)
@@ -2096,7 +2096,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
         ma         = ix(nen+1,nel)
-        iel        = ie(ma)
+        iel        = ie(2,ma)
 c ......................................................................
 c
 c ...... Chama biblioteca de elementos:
@@ -2177,7 +2177,7 @@ c ... mpi
 c ...
       integer numel,nen,nenv,ndf,ndm,nst,nad,nadpu,stge,isw,numat,nlit
       integer neq,nequ
-      integer ix(nen+1,*),iq(7,*),ie(*)
+      integer ix(nen+1,*),iq(7,*),ie(2,*)
       integer iel,ma,nel,no,i,j,k,kk,nadr,ilib
       real*8  e(prop,*),x(ndm,*)
       real*8  xl(ndm,nenv),el(prop),dtc,dtc_min,g_dtc_min
@@ -2204,7 +2204,7 @@ c ......................................................................
 c
 c ...... Arranjos de elemento:
         ma  = ix(nen+1,nel)
-        iel = ie(ma)
+        iel = ie(2,ma)
         do 610 i = 1, prop
           el(i) = e(i,ma)
   610   continue
