@@ -69,7 +69,7 @@ c *     isw = 3  tensao e fluxo                                        *
 c *     isw = 4  cargas de superfice, volume e integras do passo       *
 c *     de tempo anterior                                              *
 c *     isw = 7  porosidade                                            *
-c *     isw = 8  porosidade                                            *
+c *     isw = 8  velocidade de infiltracao ( Darcy)                    *
 c * ------------------------------------------------------------------ * 
 c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 

@@ -90,11 +90,12 @@ c.......................................................................
 c **********************************************************************
 c                                                                       
 c **********************************************************************
-      subroutine pload(x   ,id   ,f,u,v,b
-     .               ,nload,nnode,ndf,ndm)
+      subroutine pload(x   ,id   ,f    ,u
+     1               ,v    ,b    ,nload,nnode
+     2               ,ndf  ,ndm)
 c **********************************************************************
 c * Data de criacao    : 12/04/2019                                    *
-c * Data de modificaco : 00/00/0000                                    *
+c * Data de modificaco : 23/05/2020                                    *
 c * ------------------------------------------------------------------ *
 c * PLOAD: Monta o vetor de forcas                                     *
 c * ------------------------------------------------------------------ *
@@ -106,6 +107,7 @@ c * b(neq) - nao definido                                              *
 c * nload(ndf,nnode) - numero da carga nodal                           *
 c * nnode  - numero de nos acessados na particao                       *
 c * ndf    - numero de graus de liberdade por no                       *
+c * ndm    - numero de dimensoes                                       *
 c * ------------------------------------------------------------------ *
 c * Parametros de saida:                                               *
 c * ------------------------------------------------------------------ *
@@ -141,9 +143,7 @@ c
          k = id(j,i)
          if (k .gt. 0) then
             b(k) = f(j,i)
-         else
-c            v(j,i) = (f(j,i)-u(j,i))/a - v(j,i)*((1.d0-alfa)/alfa)
-c            v(j,i) = 0.d0            
+         else       
             v(j,i) = (f(j,i)-u(j,i))/dt
             u(j,i) =  f(j,i)
          endif

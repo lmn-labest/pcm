@@ -862,7 +862,7 @@ c *********************************************************************
 c
 c *********************************************************************
 c * Data de criacao    : 21/05/2020                                   *
-c * Data de modificaco : 00/00/0000                                   * 
+c * Data de modificaco : 24/05/2020                                   * 
 c * ------------------------------------------------------------------*    
 c * WRITE_MESH_RES_PCM: escreve a malha com os resultdados do problma *
 c * poro-quimico-mecanico no formato vtk                              *
@@ -899,6 +899,9 @@ c *                 stress Biot     (6)                               *
 c *                 stress Terzaghi (7)                               *
 c *                 fluxo de darcy  (8)                               *
 c *                 delta prosidade (9)                               *
+c *                 delta prosidade (10)                              *
+c *                 plasticidade    (11)                              *
+c *                 cCo2            (12)                              *
 c * nout        - arquivo de saida                                    *
 c * ----------------------------------------------------------------- *    
 c * Parametros de saida :                                             *
@@ -906,23 +909,25 @@ c * ----------------------------------------------------------------- *
 c * ----------------------------------------------------------------- * 
 c * OBS:                                                              *
 c * ----------------------------------------------------------------- *
-c * 1 - deslocamento do no i- u(1,i), u(2,i) e u(3,i)                 *
-c * 2-  pressao do no i     - u(4,i)                                  *       
+c * 1 - deslocamento do no i- u(1,i)                                  *
+c * 2-  pressao do no i     - u(2,i)                                  *       
 c ********************************************************************* 
-       subroutine write_mesh_res_pcm(el     ,x     ,u     ,dp
-     1                           ,pc       ,elplastic
-     2                           ,dporosity,tx    ,txb   ,txe 
-     3                           ,flux     ,nnode ,numel ,istep 
-     4                           ,t        ,nen    ,ndm  ,ndf
-     5                           ,ntn      ,fileout,prename
-     6                           ,bvtk     ,legacy ,fprint,nout)
+       subroutine write_mesh_res_pcm(el    ,x      ,u       
+     1                           ,dp       ,pc     ,elplastic
+     2                           ,dporosity,tx     ,txb   ,txe 
+     3                           ,flux     ,u_tr
+     4                           ,nnode    ,numel  ,istep 
+     5                           ,t        ,nen    ,ndm  
+     6                           ,ndf      ,ndf_tr
+     7                           ,ntn      ,fileout,prename
+     8                           ,bvtk     ,legacy ,fprint,nout)
 c ===
       use Malloc 
       implicit none
 c ... variaveis da malha      
-      integer nnode,numel,nen,ndm,ndf,ntn,ntn1
+      integer nnode,numel,nen,ndm,ndf,ndf_tr,ntn,ntn1
       integer el(nen+1,numel),elplastic(*)
-      real*8  x(ndm,*),u(ndf,*),dp(*),dporosity(*),pc(*)
+      real*8  x(ndm,*),u(ndf,*),u_tr(ndf_tr,*),dp(*),dporosity(*),pc(*)
       real*8 tx(ntn,*),txb(ntn,*),txe(ntn,*),flux(ndm,*)
       integer nel,nno
 c ... tempo
@@ -1081,10 +1086,12 @@ c     cod2 1 int(4bytes)
 c .....................................................................
 c
 c ...
-      i_p  = alloc_8('p       ',1     ,nnode)
-      i_uv = alloc_8('uv      ',ndf-1 ,nnode)
-      call split_u_p(ia(i_p),ia(i_uv),u,el,nnode,numel
-     .              ,nen,ndf,fprint(1))
+      if(fprint(2) .and. fprint(3)) then
+        i_p  = alloc_8('p       ',1     ,nnode)
+        i_uv = alloc_8('uv      ',ndf-1 ,nnode)
+        call split_u_p(ia(i_p),ia(i_uv),u,el,nnode,numel
+     .                ,nen,ndf,fprint(1))
+      endif
 c ... desloc     
       write(aux1,'(15a)')'desloc'
 c ... gdb graus de liberdade
@@ -1205,8 +1212,10 @@ c ...
 c .....................................................................
 c
 c ...
-      i_uv= dealloc('uv      ')
-      i_p = dealloc('p       ')
+      if(fprint(2) .and. fprint(3)) then
+        i_uv= dealloc('uv      ')
+        i_p = dealloc('p       ')
+      endif
 c .....................................................................
 c
 c ... fluxo de darcy    
@@ -1351,7 +1360,26 @@ c
 c ...
       if( ntn .eq. 6 ) i_tensor = dealloc('tensor  ')
 c .....................................................................
-c    
+c
+c ... pressao    
+      write(aux1,'(15a)')'cCO2'
+c ... gdb graus de liberdade
+c     cod  1 escalar
+c     cod2 3 real(8bytes) 
+      gdl =  1              
+      cod =  1
+      cod2 = 3
+      if(fprint(12)) then
+        if(legacy) then
+          call point_prop_vtk(idum,fdum,u_tr,nnode,aux1,ndm,gdl
+     .                      ,cod,cod2,bvtk,nout)
+        else
+          call point_prop_vtu(idum,fdum,u_tr,nnode,aux1,ndm,gdl
+     .                       ,cod,cod2,bvtk,nout)
+        endif
+      endif
+c .....................................................................
+c  
 c ...      
       if(legacy .eqv. .false.) then
         call point_data_finalize_vtu(bvtk,nout)

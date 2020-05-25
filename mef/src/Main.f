@@ -67,13 +67,20 @@ c.......................................................................
 c
 c ... Variaveis descritivas do problema:
 c
-      integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndm,nst
-      logical fporomec,fplastic,fcoo
+      integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndf_tr,ndm
+      integer nst,nst_tr,nst_max
+      logical fporomec,fplastic,f_trans
 c ......................................................................
 c
 c ... Variaveis do sistema de equacoes:
-      integer neq,nequ,neqp,naduu,nadpp,nadpu
-      integer*8 nad,nadr
+c ... sistema poromecanico 
+      integer neq,nequ,neqp,naduu,nadpp,nadpu,nadr
+      integer*8 nad
+c ... sistema de transporte
+      integer neq_tr,nadr_tr
+      integer*8 nad_tr
+c 
+      integer neq_max      
       integer n_blocks_pu
       logical block_pu,block_pu_sym,fneqs
       character*8 sia,sja,sau,sal,sad
@@ -113,28 +120,36 @@ c
 c ... Ponteiros:
 c
 c ... malha
-      integer*8 i_ix,i_id,i_ie,i_nload,i_eload,i_eloadp
+      integer*8 i_ix,i_ie
       integer*8 i_ic,i_fnno,i_e,i_x,i_xq,i_inum
+      integer*8 i_id,i_id_tr
+c ... poromecanico
+      integer*8  i_nload,i_eload,i_eloadp
+c ... transporte
+      integer*8  i_nload_tr,i_eload_tr
 c ... arranjos locais ao elemento
       integer*8 i_xl,i_ul,i_vl,i_pl,i_sl,i_ld,i_dpl,i_txl,i_txnl
       integer*8 i_plasticl
       integer*8 i_tx1pl,i_tx2pl,i_depsl,i_porosity,i_dporo,i_p0l
-      integer*8 i_vpropell
+      integer*8 i_vpropell,i_vell
 c ... forcas e graus de liberdade 
+c ... poromecanico
       integer*8 i_f
       integer*8 i_u,i_u0,i_tx0,i_tx1p,i_tx2p,i_plastic,i_depsp,i_dp
       integer*8 i_tx,i_txb,i_txe,i_flux,i_pc,i_elplastic
-      integer*8 i_v,i_darcy_vel
+      integer*8 i_darcy_vel
+c ... transporte
+      integer*8 i_f_tr,i_v_tr,i_u_tr,i_u0_tr
 c ... sistema de equacoes
+c ... poromecanico
       integer*8 i_ia,i_ja,i_ad,i_au,i_al,i_b,i_b0,i_x0,i_bst0
+c ... transporte
+      integer*8 i_ia_tr,i_ja_tr,i_ad_tr,i_au_tr,i_al_tr,i_b_tr,i_b0_tr
+      integer*8 i_x0_tr
 c ... precondicionador
       integer*8 i_m
 c ... variacao das propriedades por elemento
       integer*8 i_vpropel
-c ... coo
-      integer*8 i_lin,i_col,i_acoo
-      integer*8 i_linuu,i_coluu,i_acoouu
-      integer*8 i_linpp,i_colpp,i_acoopp
 c ......................................................................
 c
 c ... tensoes iniciais
@@ -144,13 +159,13 @@ c
 c ... Macro-comandos disponiveis:
 c
       data nmc /40/
-      data macro/'loop    ','        ','mesh    '
-     1          ,'solv    ','dt      ','pgeo    '
+      data macro/'loop    ','edp     ','mesh    '
+     1          ,'        ','dt      ','pgeo    '
      2          ,'        ','block_pu','gravity '
      3          ,'conseq  ','solver  ','deltatc '
      4          ,'        ','pcolors ','        '
-     5          ,'pres    ','solvt   ','solvm   '
-     6          ,'pmecres ','ptermres','        '
+     5          ,'pres    ','        ','solvpm  '
+     6          ,'        ','        ','solvtr  '
      7          ,'        ','        ','        '
      8          ,'        ','nl      ','        '
      9          ,'        ','        ','return  '
@@ -188,6 +203,11 @@ c ......................................................................
       dt      =  1.d0
       alfa    =  1.d0
       beta    =  1.d0
+c ...
+      neq    = 0
+      neq_tr = 0
+      nad    = 0
+      nad_tr = 0
 c ... escrita de variavies no vtk
 c ... malha quadratica (1)
 c ... deslocamento     (2)
@@ -200,8 +220,8 @@ c ... fluxo de darcy   (8)
 c ... delta prosidade  (9)
 c ... pconsolidation  (10)
 c ... plastic elemt   (11)
-c ... temperatura     (12)
-c ... fluxo de calor  (13)
+c ... concentracao Co2(12)
+c ...                 (13)
       print_flag(1) = .false. 
       print_flag(2) = .true.
       print_flag(3) = .true.  
@@ -213,10 +233,11 @@ c ... fluxo de calor  (13)
       print_flag(9) = .false.
       print_flag(10)= .false. 
       print_flag(11)= .false. 
-      print_flag(12)= .false. 
+      print_flag(12)= .true. 
       print_flag(13)= .false. 
 c ... tipo do problema
-c ... fporomec  = problema poromecanico                              
+c ... fporomec  = problema poromecanico     
+c ... f_trans   = problema de transporte                           
 c ... fplastic  = plasticidade
 c ... vprop     = propriedades variaveis
 c             1 - prop por pontos de integracao (true|false)                          
@@ -224,6 +245,7 @@ c             2 - konzey-Caraman                (true|false)
 c             3 - mecanico                      (true|false)                          
 c             4 - massa especifica              (true|false)                          
       fporomec   = .false.
+      f_trans    = .false.
       fplastic   = .false.
       vprop(1)   = .false.
       vprop(2)   = .false.
@@ -314,8 +336,6 @@ c ... OpenMP
       omp_solv = .false.
       nth_elmt = 1
       nth_solv = 1
-c ...
-      fcoo = .false.
 c ... calculo do numero de equacoes
       fneqs = .false.
 c ......................................................................
@@ -380,13 +400,13 @@ c ......................................................................
    60 continue
       goto 50
    70 continue
-      goto (100 , 200, 300 !'loop    ',''        ,'mesh    '
+      goto (100 , 200, 300 !'loop    ','edp     ','mesh    '
      1     ,400 , 500, 600 !'        ','dt      ','pgeo    '
      2     ,700 , 800, 900 !'        ','block_pu','gravity '
      3     ,1000,1100,1200 !'conseq  ','solver  ','deltatc '
      4     ,1300,1400,1500 !'        ','        ','        '
-     5     ,1600,1700,1800 !'ppcmres ','        ','solvm   '
-     6     ,1900,2000,2100 !'        ','        ','        '
+     5     ,1600,1700,1800 !'pres    ','        ','solvm   '
+     6     ,1900,2000,2100 !'        ','        ','solvtr  '
      7     ,2200,2300,2400 !'        ','        ','        '
      8     ,2500,2600,2700 !'        ','nl      ','        '
      9     ,2800,2900,3000 !'        ','        ','return  '
@@ -425,6 +445,8 @@ c ... Macro-comando :
 c
 c ......................................................................
   200 continue
+      print*, 'Macro EDP'
+      call read_edp(fporomec, ndf, f_trans, ndf_tr, nin) 
       goto 50
 c ----------------------------------------------------------------------
 c
@@ -446,17 +468,21 @@ c
       flag_macro_mesh = .true.
 c
 c.... Leitura de dados:
-      call rdat_pcm(nnode    ,nnodev   ,numel      ,numat  
-     1         ,nen         ,nenv     ,ntn        ,ndf
-     2         ,ndm         ,nst      ,i_ix       ,i_ie   
-     3         ,i_inum      ,i_e      ,i_x        ,i_id  
-     4         ,i_nload     ,i_eload  ,i_eloadp   ,i_f  
-     5         ,i_u         ,i_u0     ,i_tx0      ,i_dp
-     6         ,i_darcy_vel ,i_tx1p   ,i_tx2p     ,i_depsp   
-     7         ,i_plastic   ,i_v
-     8         ,i_porosity  ,i_fnno   ,i_elplastic,i_vpropel
-     9         ,fstress0    ,fporomec ,print_flag(1),fplastic,vprop
-     1         ,cc_macros   ,nin)
+      call rdat_pcm(nnode   ,nnodev    ,numel     ,numat  
+     1         ,nen         ,nenv      ,ntn       ,ndm 
+     2         ,ndf         ,ndf_tr    ,nst       ,nst_tr 
+     3         ,i_ix        ,i_ie   
+     4         ,i_inum      ,i_e       ,i_x        ,i_id  
+     5         ,i_nload     ,i_eload   ,i_eloadp   ,i_f  
+     6         ,i_u         ,i_u0      ,i_tx0      ,i_dp
+     7         ,i_darcy_vel ,i_tx1p    ,i_tx2p     ,i_depsp   
+     8         ,i_id_tr     ,i_nload_tr,i_eload_tr ,i_f_tr   
+     9         ,i_u_tr      ,i_u0_tr   ,i_v_tr
+     1         ,i_plastic   
+     2         ,i_porosity   ,i_fnno   ,i_elplastic,i_vpropel
+     3         ,fstress0     ,fporomec ,f_trans 
+     4         ,print_flag(1),fplastic
+     5         ,vprop        ,cc_macros    ,nin)
 c    -----------------------------------------------------------------
 c    | ix | id | ie | nload | eload | eloadp| inum | e | x | f | u | 
 c    -----------------------------------------------------------------
@@ -553,16 +579,42 @@ c ... numera os deslocamento e pressoes ao mesmo tempo
         endif
       endif
 c ......................................................................
+c
+c ... mecanico
+      if(f_trans) then
+        call numeqpmec2(ia(i_id_tr),ia(i_inum),ia(i_id_tr),ia(i_fnno),
+     .                    nnode,nnodev,ndf_tr,neq_tr)
+      endif
+c ......................................................................
+c
+c ......................................................................
       numeqtime = get_time()-timei
 c ......................................................................
 c
+c ...
+      nst_max = max(nst,nst_tr)
+      i_xl  = alloc_8('xl      ',ndm    ,nenv)
+      i_ul  = alloc_8('ul      ',1      ,nst_max)
+      i_pl  = alloc_8('pl      ',1      ,nst_max)
+      i_sl  = alloc_8('sl      ',nst_max,nst_max)
+      i_ld  = alloc_4('ld      ',1      ,nst_max)
+c
+c     ---------------------------------------------
+c     | xl | ul | pl | sl | ld |
+c     ---------------------------------------------
+c
+c ... transporte
+      if(f_trans) then
+        i_vl   = alloc_8('vl      ',1      ,nst_tr)
+        i_vell = alloc_8('vell    ',ndm    ,nst_tr)
+      endif
+c ..................................................................
+c
 c ... poro mecanico
-      if(fporomec) then
-        i_xl  = alloc_8('xl      ',ndm,nenv)
-        i_ul  = alloc_8('ul      ',1  ,nst)
+      if(fporomec) then        
         i_dpl = alloc_8('dpl     ',1  ,nenv)
         i_p0l = alloc_8('p0l     ',1  ,nenv)
-        i_pl  = alloc_8('pl      ',1  ,nst)
+        
 c ... 6 - tensoes totais, 6 - tensoes de biot , 3 - fluxo de darcy
         i_txl      = alloc_8('txl     ', 15,nenv)
 c ...      
@@ -589,26 +641,25 @@ c ...
 c ... propriedades variaveis nos pontos de integracao
           i_vpropell = alloc_8('vpropell ',nvprop,npi)
         endif
-c ...      
-        i_sl  = alloc_8('sl      ',nst,nst)
-        i_ld  = alloc_4('ld      ',  1,nst)
       endif 
 c .......................................................................
 c
-c     ---------------------------------------------
-c     | xl | ul | dpl | pl | txl | txnl | sl | ld |
-c     ---------------------------------------------
+c     -----------------------------------------------
+c     | txl | txnl | tx1l | tx2l | depsl | plasticl |
+c   
+c     | vpropell |
+c     -----------------------------------------------
 c
-c ... -emoria para a estrutura de dados do sistema de equacoes:
+c ... a estrutura de dados do sistema de equacoes:
 c
       timei = get_time()
 c ... poromecanico
       if (fporomec) then
-         sia = 'ia' 
-         sja = 'ja' 
-         sau = 'au' 
-         sal = 'al' 
-         sad = 'ad' 
+         sia = 'ia_pm' 
+         sja = 'ja_pm' 
+         sau = 'au_pm' 
+         sal = 'al_pm' 
+         sad = 'ad_pm' 
          call datastruct_pm(ia(i_ix),ia(i_id),ia(i_inum),nnode,nnodev
      1                     ,numel   ,nen     ,ndf       ,nst
      2                     ,neq     ,nequ    ,neqp      ,stge ,unsym 
@@ -616,7 +667,22 @@ c ... poromecanico
      4                     ,i_ia ,i_ja,i_au  ,i_al,i_ad 
      5                     ,sia  ,sja ,sau   ,sal ,sad    
      6                     ,.false.,n_blocks_pu,block_pu ,block_pu_sym) 
+      endif
 c .....................................................................
+c
+c ... 
+      if(f_trans) then
+         sia = 'ia_tr' 
+         sja = 'ja_tr' 
+         sau = 'au_tr' 
+         sal = 'al_tr' 
+         sad = 'ad_tr'  
+         call datastruct(ia(i_ix),ia(i_id_tr),ia(i_inum),nnodev
+     1                  ,numel   ,nen     ,ndf_tr    ,nst_tr
+     2                  ,neq_tr  ,stge    ,unsym     ,nad_tr,nadr_tr
+     3                  ,i_ia_tr ,i_ja_tr ,i_au_tr   ,i_al_tr,i_ad_tr 
+     4                  ,sia     ,sja     ,sau       ,sal    ,sad       
+     5                  ,.false.)
       endif
       dstime = get_time()-timei
 c
@@ -628,44 +694,53 @@ c
       colortime = get_time()-colortime
 c ......................................................................
 c
+c ... Memoria para o vetor de forcas e solucao:
+      if (fporomec) then
+        i_x0  = alloc_8('x0      ',    1,neq)
+        i_bst0= alloc_8('bstress0',    1,neq)
+        i_b0  = alloc_8('b0      ',    1,neq)
+        i_b   = alloc_8('b       ',    1,neq)
+        call azero(ia(i_x0)  ,neq)
+        call azero(ia(i_bst0),neq) 
+        call azero(ia(i_b0)  ,neq)      
+        call azero(ia(i_b )  ,neq)
+      endif
 c ......................................................................
 c
 c ... Memoria para o vetor de forcas e solucao:
-c
-c   vetor que usam a subrotina comunicate necessitam ter a dimensao        
-c   neq+neq3+neq4                                                       
+      if (f_trans) then
+        i_x0_tr = alloc_8('x0_tr   ',    1,neq_tr)
+        i_b0_tr = alloc_8('b0_tr   ',    1,neq_tr)
+        i_b_tr  = alloc_8('b_tr    ',    1,neq_tr)
+        call azero(ia(i_x0_tr)  ,neq_tr)
+        call azero(ia(i_b0_tr)  ,neq_tr)      
+        call azero(ia(i_b_tr )  ,neq_tr)
+      endif
 c ......................................................................
-      if (ndf .gt. 0) then
-         i_x0  = alloc_8('x0      ',    1,neq)
-         i_bst0= alloc_8('bstress0',    1,neq)
-         i_b0  = alloc_8('b0      ',    1,neq)
-         i_b   = alloc_8('b       ',    1,neq)
-         call azero(ia(i_x0)  ,neq)
-         call azero(ia(i_bst0),neq) 
-         call azero(ia(i_b0)  ,neq)      
-         call azero(ia(i_b )  ,neq)
+c
 c ...
-         i_m   = 1
+      i_m   = 1
+      neq_max = max(neq,neq_tr)
 c ...  Memoria para o precondicionador diagonal:
-         if(precond .eq. 2 .or. precond .eq. 5 
+      if(precond .eq. 2 .or. precond .eq. 5 
      .     .or.  precond .eq. 7  ) then 
-           i_m   = alloc_8('m       ',    1,neq)
-           call azero(ia(i_m),neq)
+           i_m   = alloc_8('m       ',    1,neq_max)
+        call azero(ia(i_m),neq_max)
 c .....................................................................
 c
 c ...  Memoria para o precondicionador iLDLt e iLLT (cholesky)
-         else if( precond .eq. 3 .or.  precond .eq. 4) then
-           i_m   = alloc_8('m       ',    1,neq+nad)
-           call azero(ia(i_m),neq+nad)
+      neq_max = max(neq+nad,neq_tr+nadr_tr)
+      else if( precond .eq. 3 .or.  precond .eq. 4) then
+        i_m   = alloc_8('m       ',    1,neq_max)
+        call azero(ia(i_m),neq_max)
 c ..................................................................... 
 c
 c ...  Memoria para o precondicionador block diagonal
-         else if( precond .eq. 6) then
-           i_m   = alloc_8('m       ',iparam(3),neq)
-           call azero(ia(i_m),iparam(3)*neq)
+      else if( precond .eq. 6) then
+        i_m   = alloc_8('m       ',iparam(3),neq_max)
+        call azero(ia(i_m),iparam(3)*neq_max)
 c ..................................................................... 
-         endif       
-      endif
+      endif       
 c ......................................................................
 c
 c ...
@@ -726,260 +801,10 @@ c ...
       go to 50
 c ......................................................................
 c
-c ... Macro-comando SOLV:
+c ... Macro-comando :
 c
 c ......................................................................
   400 continue
-      print*, 'Macro SOLV '
-c ...
-      ilib   = 1
-      i      = 1
-      istep  = istep + 1
-      t      = t + dt
-c .....................................................................
-c
-c ...
-      write(*,'(a,i8,a,f15.1,a,f15.5,a,f15.5)')
-     1                                  ,' STEP '      ,istep
-     2                                  ,' Time(s)'    ,t
-     3                                  ,' Time(hours)',t/3600.d0
-     4                                  ,' Time(days)' ,t/86400.d0
-      write(nout_nonlinear,'(a,i9,e13.6)')'step',istep,t
-      if(fhist_log)write(log_hist_solv,'(a,i9,e13.6)')'step',istep,t
-c .....................................................................
-c
-c ... Cargas nodais e valores prescritos no tempo t+dt:
-      timei = get_time()
-      call pload_pm(ia(i_id)  ,ia(i_x) ,ia(i_f)
-     1             ,ia(i_u)   ,ia(i_b0),ia(i_nload)
-     2             ,ia(i_fnno),nnode   ,ndf,ndm)
-      vectime = vectime + get_time()-timei
-c .....................................................................   
-c
-c ... forcas de volume e superficie do tempo t+dt e graus de liberade 
-c     do passo t:  
-      timei = get_time()
-      call pform_pm(ia(i_ix)  ,ia(i_eload) ,ia(i_eloadp)
-     1           ,ia(i_ie)    ,ia(i_e) 
-     2           ,ia(i_x)     ,ia(i_id)   ,ia(i_ia)  ,ia(i_ja) 
-     3           ,ia(i_au)    ,ia(i_al)   ,ia(i_ad)  ,ia(i_b0) 
-     4           ,ia(i_u0)    ,ia(i_u)    ,ia(i_tx1p),ia(i_tx2p)
-     5           ,ia(i_depsp) ,ia(i_dp)   ,ia(i_plastic),ia(i_elplastic)
-     6           ,ia(i_vpropel)   
-     7           ,ia(i_xl)    ,ia(i_ul)   ,ia(i_p0l)  ,ia(i_dpl)
-     8           ,ia(i_pl)    ,ia(i_sl)   ,ia(i_ld)   ,ia(i_txnl)
-     9           ,ia(i_tx1pl) ,ia(i_tx2pl),ia(i_depsl),ia(i_plasticl)
-     1           ,ia(i_vpropell)   
-     2           ,numel       ,nen        ,nenv       ,ndf 
-     3           ,ndm         ,nst        ,npi        ,ntn
-     4           ,neq         ,nequ       ,neqp 
-     5           ,nad         ,naduu      ,nadpp      ,nadpu,nadr 
-     6           ,.false.     ,.true.     ,unsym 
-     7           ,stge        ,4          ,ilib     ,i
-     8           ,ia(i_colorg),ia(i_elcolor),numcolors
-     9           ,block_pu    ,n_blocks_pu  ,fplastic,vprop)
-      elmtime = elmtime + get_time()-timei
-c .....................................................................
-c
-c ... tensao inicial elastico
-      if(fstress0 .and. ( .not. fplastic) ) then
-        call vsum(ia(i_b0),ia(i_bst0),neq,ia(i_b0))
-      endif  
-c .....................................................................
-c
-c ... Preditor: du(n+1,0) = u(n+1) - u(n)  
-      timei = get_time()
-      call delta_predict_pm(nnode,ndf,ia(i_u),ia(i_u0),ia(i_fnno))
-      vectime = vectime + get_time()-timei
-c .....................................................................
-c
-c ---------------------------------------------------------------------
-c loop nao linear:
-c ---------------------------------------------------------------------
-      lhs = .true.  
-  410 continue
-c ...
-      timei = get_time()
-      call aequalb(ia(i_b),ia(i_b0),neq)
-      vectime = vectime + get_time()-timei
-c .....................................................................
-c      
-c ... Residuo:
-c ... plastic
-c              Fu = Fu - int(BeT*sigma*dv)
-c              bp = Fp - K.dp(n+1,i)
-c ... elastic
-c              Fu = Fu - K.du(n+1,i)
-c              bp = Fp - K.dp(n+1,i)
-      timei = get_time()
-      call pform_pm(ia(i_ix),ia(i_eload) ,ia(i_eloadp)  
-     1         ,ia(i_ie)    ,ia(i_e)
-     2         ,ia(i_x)     ,ia(i_id)    ,ia(i_ia)  ,ia(i_ja)
-     3         ,ia(i_au)    ,ia(i_al)    ,ia(i_ad)  ,ia(i_b)
-     4         ,ia(i_u0)    ,ia(i_u)     ,ia(i_tx1p),ia(i_tx2p)
-     5         ,ia(i_depsp) ,ia(i_dp)    ,ia(i_plastic),ia(i_elplastic) 
-     6         ,ia(i_vpropel)   
-     7         ,ia(i_xl)    ,ia(i_ul)    ,ia(i_p0l)  ,ia(i_dpl)
-     8         ,ia(i_pl)    ,ia(i_sl)    ,ia(i_ld)   ,ia(i_txnl)
-     9         ,ia(i_tx1pl) ,ia(i_tx2pl) ,ia(i_depsl),ia(i_plasticl)
-     1         ,ia(i_vpropell)   
-     2         ,numel       ,nen         ,nenv     ,ndf
-     3         ,ndm         ,nst         ,npi      ,ntn
-     4         ,neq         ,nequ        ,neqp
-     5         ,nad         ,naduu       ,nadpp    ,nadpu,nadr
-     6         ,lhs         ,.true.      ,unsym
-     7         ,stge        ,2           ,ilib     ,i
-     8         ,ia(i_colorg),ia(i_elcolor),numcolors
-     9         ,block_pu    ,n_blocks_pu  ,fplastic,vprop)
-      elmtime = elmtime + get_time()-timei
-c .....................................................................
-c
-c ...
-      if( stop_crit .eq. 1 .or. stop_crit .eq. 2) then
-        call cal_residuo_pm(ia(i_id) ,ia(i_b),ia(i_x0)
-     1                  ,nnode    ,ndf       ,neq,i     
-     3                  ,istop    ,stop_crit ,tol
-     4                  ,0        ,.false.   ,nout_nonlinear)
-        if (istop .eq. 2) goto 420 
-      endif
-      if(fhist_log)write(log_hist_solv,'(a,i7)')'nlit',i       
-c ......................................................................            
-c
-c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
-      timei = get_time()
-      call solv_pm(neq  ,nequ    ,neqp  
-     1         ,nad     ,naduu   ,nadpp      
-     2         ,ia(i_ia),ia(i_ja),ia(i_ad)   ,ia(i_al)
-     3         ,ia(i_m) ,ia(i_b) ,ia(i_x0)   ,solvtol,maxit
-     4         ,ngram   ,block_pu,n_blocks_pu,solver,istep
-     5         ,cmaxit  ,ctol    ,alfap      ,alfau ,precond
-     6         ,.false. ,fporomec,.false.    ,fhist_log  ,fprint 
-     7         ,0       ,0       ,0          ,0     ,neq
-     8         ,0       ,0       ,0          ,0     )
-      soltime = soltime + get_time()-timei
-c .....................................................................
-c
-c ... atualizacao :      du(n+1,i+1) = du(n+1,i)      + dv(n+1,i+1)
-      timei = get_time()
-      call delta_update_pm(nnode   ,ndf
-     1                    ,ia(i_id),ia(i_u)
-     2                    ,ia(i_x0),ia(i_fnno))
-      vectime = vectime + get_time()-timei
-c .....................................................................
-c
-c ... atualizacao da propriedades nos pontos de integracao sem atualizar
-c     as porosidades
-      timei = get_time()
-      if(vprop(1) .and. newton_raphson) then
-        call update_prop(ia(i_ix),ia(i_x),ia(i_e),ia(i_ie),ia(i_vpropel)
-     1                  ,ia(i_u) ,ia(i_plastic)
-     2                  ,ia(i_xl),ia(i_ul),ia(i_plasticl),ia(i_vpropell)
-     3                  ,numel,nen ,nenv
-     4                  ,ndm  ,ndf ,nst      ,npi 
-     5                  ,10   ,ilib,fplastic,vprop,.false.)
-      endif
-      upproptime = upproptime + get_time()-timei
-c ....................................................................
-c
-c ...
-      if( stop_crit .eq. 3 .or. stop_crit .eq. 4) then
-        call cal_residuo_pm(ia(i_id) ,ia(i_b)   ,ia(i_x0)
-     1                  ,nnode    ,ndf       ,neq    ,i     
-     3                  ,istop    ,stop_crit ,tol
-     4                  ,0        ,.false.   ,nout_nonlinear)
-        if (istop .eq. 2) goto 420   
-      endif
-c .....................................................................
-c
-c ...
-      if (i .ge. maxnlit)then
-        print*,'Newton-Raphson: no convergence reached after '
-     .        ,i,' iteretions !'      
-        call stop_mef()
-c       goto 420
-      endif
-      i = i + 1
-c .....................................................................
-c
-c ... matriz K global calculada apenas na primeira iteracao
-      if (.not. newton_raphson) lhs = .false.
-c .....................................................................
-      goto 410 
-c .....................................................................
-c
-c .....................................................................
-c fim do loop nao linear:
-c .....................................................................
-c
-c ...
-  420 continue
-c ... atualizacao da propriedades nos pontos de integracao e as
-c     porosidades
-      timei = get_time()
-      if(vprop(1)) then
-        call update_prop(ia(i_ix),ia(i_x),ia(i_e),ia(i_ie),ia(i_vpropel)
-     1                  ,ia(i_u) ,ia(i_plastic)
-     2                  ,ia(i_xl),ia(i_ul),ia(i_plasticl),ia(i_vpropell)
-     3                  ,numel,nen ,nenv
-     4                  ,ndm  ,ndf ,nst     ,npi 
-     5                  ,10   ,ilib,fplastic,vprop,.true.)
-      endif
-      upproptime = upproptime + get_time()-timei
-c ....................................................................
-c
-c ... calculo da porosidade nodal
-      i_ic    = alloc_4('ic      ',    1,nnode)
-      i_dporo = alloc_8('dporo   ',    1,nnode)
-      call porosity_form(ia(i_ix),ia(i_x) ,ia(i_e) ,ia(i_ie)
-     1     ,ia(i_u) ,ia(i_porosity),ia(i_plastic),ia(i_dporo)
-     2     ,ia(i_vpropel),ia(i_ic),ia(i_fnno)
-     3     ,ia(i_xl),ia(i_ul),ia(i_pl),ia(i_plasticl),ia(i_vpropell)
-     4     ,nnode   ,numel   ,nen    ,nenv
-     5     ,ndm     ,ndf     ,nst    ,npi 
-     6     ,7       ,ilib    ,0      ,.false.
-     7     ,fplastic,vprop)
-      i_dporo = dealloc('dporo   ')
-      i_ic    = dealloc('ic      ') 
-c .....................................................................
-c
-c ... calculo da solucao no tempo t + dt e atualizacao dos valores do 
-c     passo de tempo anterior: 
-c     u(n+1)  = u(n) + du(n+1) 
-c     u(n)    = u(n+1) 
-c     dp(n+1) = p(n) - p(0)
-      timei = get_time()
-c     call update_res(nnode  ,nnodev  ,ndf
-c    .               ,ia(i_u),ia(i_u0),ia(i_dp),ia(i_pres0))
-      call update_res_v2(nnode   ,ndf
-     1                  ,ia(i_u) ,ia(i_u0)
-     2                  ,ia(i_dp),ia(i_fnno))
-c .....................................................................
-c
-c ... 
-      if(fplastic) then
-c ... atualizacoes as tensoes do passo de tempo anterior tx2p -> tx1p
-        call aequalb(ia(i_tx1p),ia(i_tx2p),ntn*npi*numel)   
-c ... atualizacoes as deformacoes volumetricas plastica 
-c     do passo de tempo anterior 1 -> 2
-        call update_plastic(ia(i_ix),ia(i_e),ia(i_plastic),ia(i_vpropel)
-     .                     ,nen,npi,numel,vprop)
-      endif
-c .....................................................................
-      vectime = vectime + get_time()-timei
-c .....................................................................
-c
-c ... calculo da velociade de darcy por no
-      i_ic        = alloc_4('ic      ',    1,nnode)
-      call darcy_vel(ia(i_ix)   , ia(i_x) , ia(i_e) , ia(i_ie)
-     1  ,ia(i_ic)       , ia(i_xl), ia(i_ul), ia(i_dpl)  ,ia(i_vpropell)
-     2  ,ia(i_txl)      ,ia(i_u) ,ia(i_dp) ,ia(i_vpropel)
-     3  ,ia(i_darcy_vel),ia(i_fnno),ia(i_nload) 
-     4  ,nnode          ,numel     ,nen       ,nenv
-     6  ,ndm            ,ndf       ,nst       ,ntn  ,npi
-     7  ,8              ,ilib      ,vprop)
-      i_ic       = dealloc('ic      ')
-      call printv(ia(i_darcy_vel),nnodev)
-c .....................................................................
       goto 50 
 c ----------------------------------------------------------------------
 c
@@ -1145,7 +970,7 @@ c ... Macro-comando: PRES - impressao dos resultados
 c
 c ......................................................................
  1600 continue
-      print*,'Macro PPCMRES'
+      print*,'Macro PRES'
 c ... print_flag (true| false)
 c     2  - desloc
 c     3  - pressao 
@@ -1164,21 +989,23 @@ c ...
       i_txe  = 1
       i_txb  = 1
       i_flux = 1
-      i_ic   = 1    
+      i_ic   = 1  
+      i_pc   = 1
 c ......................................................................
 c
 c ...
       i_ic        = alloc_4('ic      ',    1,nnode)
-      i_tx        = alloc_8('tx      ',  ntn,nnode)
-      i_txe       = alloc_8('txe     ',  ntn,nnode)
-      i_txb       = alloc_8('txb     ',  ntn,nnode)
-      i_flux      = alloc_8('flux    ',  ndm,nnode)
-      i_pc        = alloc_8('pc      ',    1,nnode)
+      if(fporomec) then  
+        i_tx        = alloc_8('tx      ',  ntn,nnode)
+        i_txe       = alloc_8('txe     ',  ntn,nnode)
+        i_txb       = alloc_8('txb     ',  ntn,nnode)
+        i_flux      = alloc_8('flux    ',  ndm,nnode)
+        i_pc        = alloc_8('pc      ',    1,nnode)
+      endif
 c .....................................................................
 c
 c ...
-      if( print_flag(5) .or. print_flag(6) .or. print_flag(7) 
-     .     .or. print_flag(8)) then
+      if( print_flag(5) .or. print_flag(6) .or. print_flag(7) ) then
         timei = get_time()
         call tform_pm(ia(i_ix)   ,ia(i_x)    ,ia(i_e)  ,ia(i_ie)
      1       ,ia(i_ic)   ,ia(i_xl)  ,ia(i_ul)  ,ia(i_dpl),ia(i_tx1pl)
@@ -1216,21 +1043,25 @@ c ...
 c ......................................................................
 c
 c ...
-      call write_mesh_res_pcm(ia(i_ix),ia(i_x)    ,ia(i_u)  ,ia(i_dp)
-     1              ,ia(i_pc)       ,ia(i_elplastic)
+      call write_mesh_res_pcm(ia(i_ix),ia(i_x)  ,ia(i_u)  
+     1              ,ia(i_dp)       ,ia(i_pc)   ,ia(i_elplastic)
      2              ,ia(i_porosity) ,ia(i_tx)   ,ia(i_txb),ia(i_txe)
-     3              ,ia(i_darcy_vel),print_nnode,numel    ,istep   
-     4              ,t              ,nen        ,ndm      ,ndf   
-     5              ,ntn            ,fname      ,prename   
-     6              ,bvtk           ,legacy_vtk ,print_flag,nplot)
+     3              ,ia(i_darcy_vel),ia(i_u_tr)
+     4              ,print_nnode    ,numel      ,istep   
+     5              ,t              ,nen        ,ndm     
+     6              ,ndf            ,ndf_tr
+     7              ,ntn            ,fname      ,prename   
+     8              ,bvtk           ,legacy_vtk ,print_flag,nplot)
 c ......................................................................
 c
 c ...
-      i_pc       = dealloc('pc      ')
-      i_flux     = dealloc('flux    ')
-      i_txb      = dealloc('txb     ')
-      i_txe      = dealloc('txe     ')
-      i_tx       = dealloc('tx      ')
+      if(fporomec) then  
+        i_pc       = dealloc('pc      ')
+        i_flux     = dealloc('flux    ')
+        i_txb      = dealloc('txb     ')
+        i_txe      = dealloc('txe     ')
+        i_tx       = dealloc('tx      ')
+      endif
       i_ic       = dealloc('ic      ')
 c ......................................................................
       goto 50     
@@ -1249,7 +1080,256 @@ c ... Macro-comando: None
 c
 c ......................................................................
  1800 continue
-      print*, 'Macro  None'
+      print*, 'Macro SOLVPM'
+c ...
+      ilib   = 1
+      i      = 1
+      istep  = istep + 1
+      t      = t + dt
+c .....................................................................
+c
+c ...
+      write(*,'(a,i8,a,f15.1,a,f15.5,a,f15.5)')
+     1                                  ,' STEP '      ,istep
+     2                                  ,' Time(s)'    ,t
+     3                                  ,' Time(hours)',t/3600.d0
+     4                                  ,' Time(days)' ,t/86400.d0
+      write(nout_nonlinear,'(a,i9,e13.6)')'step',istep,t
+      if(fhist_log)write(log_hist_solv,'(a,i9,e13.6)')'step',istep,t
+c .....................................................................
+c
+c ... Cargas nodais e valores prescritos no tempo t+dt:
+      timei = get_time()
+      call pload_pm(ia(i_id)  ,ia(i_x) ,ia(i_f)
+     1             ,ia(i_u)   ,ia(i_b0),ia(i_nload)
+     2             ,ia(i_fnno),nnode   ,ndf,ndm)
+      vectime = vectime + get_time()-timei
+c .....................................................................   
+c
+c ... forcas de volume e superficie do tempo t+dt e graus de liberade 
+c     do passo t:  
+      timei = get_time()
+      call pform_pm(ia(i_ix)  ,ia(i_eload) ,ia(i_eloadp)
+     1           ,ia(i_ie)    ,ia(i_e) 
+     2           ,ia(i_x)     ,ia(i_id)   ,ia(i_ia)  ,ia(i_ja) 
+     3           ,ia(i_au)    ,ia(i_al)   ,ia(i_ad)  ,ia(i_b0) 
+     4           ,ia(i_u0)    ,ia(i_u)    ,ia(i_tx1p),ia(i_tx2p)
+     5           ,ia(i_depsp) ,ia(i_dp)   ,ia(i_plastic),ia(i_elplastic)
+     6           ,ia(i_vpropel)   
+     7           ,ia(i_xl)    ,ia(i_ul)   ,ia(i_p0l)  ,ia(i_dpl)
+     8           ,ia(i_pl)    ,ia(i_sl)   ,ia(i_ld)   ,ia(i_txnl)
+     9           ,ia(i_tx1pl) ,ia(i_tx2pl),ia(i_depsl),ia(i_plasticl)
+     1           ,ia(i_vpropell)   
+     2           ,numel       ,nen        ,nenv       ,ndf 
+     3           ,ndm         ,nst        ,npi        ,ntn
+     4           ,neq         ,nequ       ,neqp 
+     5           ,nad         ,naduu      ,nadpp      ,nadpu,nadr 
+     6           ,.false.     ,.true.     ,unsym 
+     7           ,stge        ,4          ,ilib     ,i
+     8           ,ia(i_colorg),ia(i_elcolor),numcolors
+     9           ,block_pu    ,n_blocks_pu  ,fplastic,vprop)
+      elmtime = elmtime + get_time()-timei
+c .....................................................................
+c
+c ... tensao inicial elastico
+      if(fstress0 .and. ( .not. fplastic) ) then
+        call vsum(ia(i_b0),ia(i_bst0),neq,ia(i_b0))
+      endif  
+c .....................................................................
+c
+c ... Preditor: du(n+1,0) = u(n+1) - u(n)  
+      timei = get_time()
+      call delta_predict_pm(nnode,ndf,ia(i_u),ia(i_u0),ia(i_fnno))
+      vectime = vectime + get_time()-timei
+c .....................................................................
+c
+c ---------------------------------------------------------------------
+c loop nao linear:
+c ---------------------------------------------------------------------
+      lhs = .true.  
+ 1810 continue
+c ...
+      timei = get_time()
+      call aequalb(ia(i_b),ia(i_b0),neq)
+      vectime = vectime + get_time()-timei
+c .....................................................................
+c      
+c ... Residuo:
+c ... plastic
+c              Fu = Fu - int(BeT*sigma*dv)
+c              bp = Fp - K.dp(n+1,i)
+c ... elastic
+c              Fu = Fu - K.du(n+1,i)
+c              bp = Fp - K.dp(n+1,i)
+      timei = get_time()
+      call pform_pm(ia(i_ix),ia(i_eload) ,ia(i_eloadp)  
+     1         ,ia(i_ie)    ,ia(i_e)
+     2         ,ia(i_x)     ,ia(i_id)    ,ia(i_ia)  ,ia(i_ja)
+     3         ,ia(i_au)    ,ia(i_al)    ,ia(i_ad)  ,ia(i_b)
+     4         ,ia(i_u0)    ,ia(i_u)     ,ia(i_tx1p),ia(i_tx2p)
+     5         ,ia(i_depsp) ,ia(i_dp)    ,ia(i_plastic),ia(i_elplastic) 
+     6         ,ia(i_vpropel)   
+     7         ,ia(i_xl)    ,ia(i_ul)    ,ia(i_p0l)  ,ia(i_dpl)
+     8         ,ia(i_pl)    ,ia(i_sl)    ,ia(i_ld)   ,ia(i_txnl)
+     9         ,ia(i_tx1pl) ,ia(i_tx2pl) ,ia(i_depsl),ia(i_plasticl)
+     1         ,ia(i_vpropell)   
+     2         ,numel       ,nen         ,nenv     ,ndf
+     3         ,ndm         ,nst         ,npi      ,ntn
+     4         ,neq         ,nequ        ,neqp
+     5         ,nad         ,naduu       ,nadpp    ,nadpu,nadr
+     6         ,lhs         ,.true.      ,unsym
+     7         ,stge        ,2           ,ilib     ,i
+     8         ,ia(i_colorg),ia(i_elcolor),numcolors
+     9         ,block_pu    ,n_blocks_pu  ,fplastic,vprop)
+      elmtime = elmtime + get_time()-timei
+c .....................................................................
+c
+c ...
+      if( stop_crit .eq. 1 .or. stop_crit .eq. 2) then
+        call cal_residuo_pm(ia(i_id) ,ia(i_b),ia(i_x0)
+     1                  ,nnode    ,ndf       ,neq,i     
+     3                  ,istop    ,stop_crit ,tol
+     4                  ,0        ,.false.   ,nout_nonlinear)
+        if (istop .eq. 2) goto 1820 
+      endif
+      if(fhist_log)write(log_hist_solv,'(a,i7)')'nlit',i       
+c ......................................................................            
+c
+c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
+      timei = get_time()
+      call solv_pm(neq  ,nequ    ,neqp  
+     1         ,nad     ,naduu   ,nadpp      
+     2         ,ia(i_ia),ia(i_ja),ia(i_ad)   ,ia(i_al)
+     3         ,ia(i_m) ,ia(i_b) ,ia(i_x0)   ,solvtol,maxit
+     4         ,ngram   ,block_pu,n_blocks_pu,solver,istep
+     5         ,cmaxit  ,ctol    ,alfap      ,alfau ,precond
+     6         ,.false. ,fporomec,.false.    ,fhist_log  ,fprint 
+     7         ,0       ,0       ,0          ,0     ,neq
+     8         ,0       ,0       ,0          ,0     )
+      soltime = soltime + get_time()-timei
+c .....................................................................
+c
+c ... atualizacao :      du(n+1,i+1) = du(n+1,i)      + dv(n+1,i+1)
+      timei = get_time()
+      call delta_update_pm(nnode   ,ndf
+     1                    ,ia(i_id),ia(i_u)
+     2                    ,ia(i_x0),ia(i_fnno))
+      vectime = vectime + get_time()-timei
+c .....................................................................
+c
+c ... atualizacao da propriedades nos pontos de integracao sem atualizar
+c     as porosidades
+      timei = get_time()
+      if(vprop(1) .and. newton_raphson) then
+        call update_prop(ia(i_ix),ia(i_x),ia(i_e),ia(i_ie),ia(i_vpropel)
+     1                  ,ia(i_u) ,ia(i_plastic)
+     2                  ,ia(i_xl),ia(i_ul),ia(i_plasticl),ia(i_vpropell)
+     3                  ,numel,nen ,nenv
+     4                  ,ndm  ,ndf ,nst      ,npi 
+     5                  ,10   ,ilib,fplastic,vprop,.false.)
+      endif
+      upproptime = upproptime + get_time()-timei
+c ....................................................................
+c
+c ...
+      if( stop_crit .eq. 3 .or. stop_crit .eq. 4) then
+        call cal_residuo_pm(ia(i_id) ,ia(i_b)   ,ia(i_x0)
+     1                  ,nnode    ,ndf       ,neq    ,i     
+     3                  ,istop    ,stop_crit ,tol
+     4                  ,0        ,.false.   ,nout_nonlinear)
+        if (istop .eq. 2) goto 1820   
+      endif
+c .....................................................................
+c
+c ...
+      if (i .ge. maxnlit)then
+        print*,'Newton-Raphson: no convergence reached after '
+     .        ,i,' iteretions !'      
+        call stop_mef()
+c       goto 420
+      endif
+      i = i + 1
+c .....................................................................
+c
+c ... matriz K global calculada apenas na primeira iteracao
+      if (.not. newton_raphson) lhs = .false.
+c .....................................................................
+      goto 1810 
+c .....................................................................
+c
+c .....................................................................
+c fim do loop nao linear:
+c .....................................................................
+c
+c ...
+ 1820 continue
+c ... atualizacao da propriedades nos pontos de integracao e as
+c     porosidades
+      timei = get_time()
+      if(vprop(1)) then
+        call update_prop(ia(i_ix),ia(i_x),ia(i_e),ia(i_ie),ia(i_vpropel)
+     1                  ,ia(i_u) ,ia(i_plastic)
+     2                  ,ia(i_xl),ia(i_ul),ia(i_plasticl),ia(i_vpropell)
+     3                  ,numel,nen ,nenv
+     4                  ,ndm  ,ndf ,nst     ,npi 
+     5                  ,10   ,ilib,fplastic,vprop,.true.)
+      endif
+      upproptime = upproptime + get_time()-timei
+c ....................................................................
+c
+c ... calculo da porosidade nodal
+      i_ic    = alloc_4('ic      ',    1,nnode)
+      i_dporo = alloc_8('dporo   ',    1,nnode)
+      call porosity_form(ia(i_ix),ia(i_x) ,ia(i_e) ,ia(i_ie)
+     1     ,ia(i_u) ,ia(i_porosity),ia(i_plastic),ia(i_dporo)
+     2     ,ia(i_vpropel),ia(i_ic),ia(i_fnno)
+     3     ,ia(i_xl),ia(i_ul),ia(i_pl),ia(i_plasticl),ia(i_vpropell)
+     4     ,nnode   ,numel   ,nen    ,nenv
+     5     ,ndm     ,ndf     ,nst    ,npi 
+     6     ,7       ,ilib    ,0      ,.false.
+     7     ,fplastic,vprop)
+      i_dporo = dealloc('dporo   ')
+      i_ic    = dealloc('ic      ') 
+c .....................................................................
+c
+c ... calculo da solucao no tempo t + dt e atualizacao dos valores do 
+c     passo de tempo anterior: 
+c     u(n+1)  = u(n) + du(n+1) 
+c     u(n)    = u(n+1) 
+c     dp(n+1) = p(n) - p(0)
+      timei = get_time()
+c     call update_res(nnode  ,nnodev  ,ndf
+c    .               ,ia(i_u),ia(i_u0),ia(i_dp),ia(i_pres0))
+      call update_res_v2(nnode   ,ndf
+     1                  ,ia(i_u) ,ia(i_u0)
+     2                  ,ia(i_dp),ia(i_fnno))
+c .....................................................................
+c
+c ... 
+      if(fplastic) then
+c ... atualizacoes as tensoes do passo de tempo anterior tx2p -> tx1p
+        call aequalb(ia(i_tx1p),ia(i_tx2p),ntn*npi*numel)   
+c ... atualizacoes as deformacoes volumetricas plastica 
+c     do passo de tempo anterior 1 -> 2
+        call update_plastic(ia(i_ix),ia(i_e),ia(i_plastic),ia(i_vpropel)
+     .                     ,nen,npi,numel,vprop)
+      endif
+c .....................................................................
+      vectime = vectime + get_time()-timei
+c .....................................................................
+c
+c ... calculo da velociade de darcy por no
+      timei = get_time()
+      i_ic        = alloc_4('ic      ',    1,nnode)
+      call darcy_vel(ia(i_ix)   , ia(i_x) , ia(i_e) , ia(i_ie)
+     1  ,ia(i_ic)       , ia(i_xl), ia(i_ul), ia(i_dpl)  ,ia(i_vpropell)
+     2  ,ia(i_txl)      ,ia(i_u) ,ia(i_dp) ,ia(i_vpropel)
+     3  ,ia(i_darcy_vel),ia(i_fnno),ia(i_nload) 
+     4  ,nnode          ,numel     ,nen       ,nenv
+     6  ,ndm            ,ndf       ,nst       ,ntn  ,npi
+     7  ,8              ,ilib      ,vprop)
+      i_ic       = dealloc('ic      ')
+      vectime = vectime + get_time()-timei
 c .....................................................................
 c
 c .....................................................................
@@ -1276,9 +1356,112 @@ c ... Macro-comando:
 c
 c ......................................................................
  2100 continue
-      print*,'Macro None'
-      goto 50
+c ...
+      ilib   = 1
+      i      = 1
+      istep  = istep + 1
+      resid0 = 0.d0
+c .....................................................................
+c
+c ... Cargas nodais e valores prescritos no tempo t+dt:
+      timei = get_time()
+      call pload(ia(i_x)   , ia(i_id_tr), ia(i_f_tr), ia(i_u_tr)
+     1          ,ia(i_v_tr), ia(i_b0_tr), ia(i_nload_tr), nnodev 
+     2          ,ndf_tr    , ndm)
+      vectime = vectime + get_time() - timei
+c .....................................................................   
+c
+c ... forcas de volume e superficie do tempo t+dt :  
+      timei = get_time()
+      call pform_trans(ia(i_ix)  ,ia(i_eload_tr),ia(i_ie) ,ia(i_e) 
+     1            ,ia(i_x)     ,ia(i_id_tr)   ,ia(i_ia_tr) ,ia(i_ja_tr)
+     2            ,ia(i_au_tr) ,ia(i_al_tr)   ,ia(i_ad_tr) ,ia(i_b0_tr) 
+     3            ,ia(i_u0_tr) ,ia(i_v_tr)   ,ia(i_darcy_vel)
+     4            ,ia(i_xl)    ,ia(i_ul)     ,ia(i_vl) ,ia(i_vell)
+     5            ,ia(i_pl)    ,ia(i_sl)     ,ia(i_ld)      
+     6            ,numel       ,nenv         ,nenv     ,ndf_tr 
+     7            ,ndm         ,nst_tr       ,neq_tr   ,nad_tr,nadr_tr
+     8            ,.false.     ,.true.       ,unsym    ,nen+1
+     9            ,stge,4      ,ilib         ,i
+     1            ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
+      elmtime = elmtime +  get_time() - timei
+c .....................................................................
+c     Preditor: u(n+1,0) = u(n) + (1-alpha).dt.dv(n) ;   v(n+1,0) = 0 ;
+      timei = get_time()
+      call predict(nnodev,ndf_tr,ia(i_id_tr),ia(i_u_tr),ia(i_v_tr))
+      vectime = vectime + get_time() - timei
+c ---------------------------------------------------------------------
+c loop nao linear:
+c ---------------------------------------------------------------------
+ 2110 continue
+c ... Loop multi-corretor:      
+      print*,'nonlinear iteration ',i
+c ...
+      timei =get_time()
+      call aequalb(ia(i_b_tr),ia(i_b0_tr),neq_tr)
+      vectime = vectime + get_time() - timei
+c .....................................................................
+c
+c     Residuo: b = F - M.v(n+1,i) - K.u(n+1,i)
+      timei = get_time()
+      call pform_trans(ia(i_ix)  ,ia(i_eload_tr),ia(i_ie)  ,ia(i_e)
+     1            ,ia(i_x)     ,ia(i_id_tr)  ,ia(i_ia_tr),ia(i_ja_tr)
+     2            ,ia(i_au_tr) ,ia(i_al_tr) ,ia(i_ad_tr),ia(i_b_tr)
+     3            ,ia(i_u_tr)  ,ia(i_v_tr)  ,ia(i_darcy_vel)
+     4            ,ia(i_xl)    ,ia(i_ul)     ,ia(i_vl) ,ia(i_vell) 
+     5            ,ia(i_pl)    ,ia(i_sl)     ,ia(i_ld)       
+     6            ,numel       ,nenv         ,nenv     ,ndf_tr
+     7            ,ndm         ,nst_tr       ,neq_tr   ,nad_tr ,nadr_tr 
+     8            ,.true.      ,.true.       ,unsym    ,nen+1
+     9            ,stge        ,2            ,ilib     ,i
+     1           ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
+      elmtime = elmtime + get_time() - timei
+c .....................................................................
+c
 c ......................................................................
+      resid = dsqrt(dot_par(ia(i_b_tr),ia(i_b_tr),neq_tr))
+      if(i .eq. 1) resid0 = max(resid0,resid)
+      print*,'resid/resid0',resid/resid0,'resid',resid
+      if ((resid/resid0) .lt. tol) goto 2120     
+c ......................................................................            
+c
+c ... solver ((M + alpha.dt.K).dv(n+1,i+1)= b )
+      timei = get_time()
+      call solv_pm(neq_tr ,0       ,0     
+     1       ,nad_tr      ,0       ,0           
+     2       ,ia(i_ia_tr),ia(i_ja_tr),ia(i_ad_tr) ,ia(i_al_tr)
+     3       ,ia(i_m)    ,ia(i_b_tr) ,ia(i_x0_tr) ,solvtol  ,maxit
+     4       ,ngram      ,block_pu   ,n_blocks_pu ,2        ,istep
+     5       ,cmaxit     ,ctol       ,alfap       ,alfau    ,precond 
+     6       ,.false.    ,.false.    ,.false.     ,fhist_log,fprint
+     7       ,0          ,0          ,0           ,0         ,neq_tr 
+     8       ,0          ,0          ,0           ,0     )
+      soltime = soltime + get_time() - timei
+c .....................................................................
+c
+c     atualizacao: u(n+1,i+1) = u(n+1,i) + alpha.dt.dv(n+1,i+1)
+c                  v(n+1,i+1) = v(n+1,i) + dv(n+1,i+1)
+      timei = get_time()
+      call update(nnodev,ndf_tr,ia(i_id_tr),ia(i_u_tr),ia(i_v_tr)
+     .           ,ia(i_x0_tr))
+      vectime = vectime + get_time() - timei   
+c .....................................................................
+c
+c ...
+      if (i .ge. maxnlit) goto 2120
+      i = i + 1
+      goto 2110 
+c .....................................................................
+c
+c ---------------------------------------------------------------------
+c fim do loop nao linear:
+c ---------------------------------------------------------------------
+c
+c ...
+ 2120 continue 
+c .....................................................................
+      goto 50
+c ----------------------------------------------------------------------
 c
 c ... Macro-comando: 
 c

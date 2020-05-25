@@ -1,3 +1,92 @@
+      subroutine elmlib_trans(e  ,iq ,x  ,u   ,v 
+     1                    ,vel,p  ,s   
+     2                    ,ndm,nst ,nel ,iel     ,isw
+     3                    ,ma ,nlit,ilib)
+c **********************************************************************
+c * Data de criacao    : 23/05/2020                                    *
+c * Data de modificaco : 00/00/0000                                    * 
+c * ------------------------------------------------------------------ *      
+c * ELMLIB_TRANS: biblioteca de elementos de transporte                *
+c * ------------------------------------------------------------------ * 
+c * Parametros de entrada:                                             *
+c * ------------------------------------------------------------------ * 
+c * e(10) - constantes fisicas                                         *
+c * iq(7) - cargas nos elementos                                       *
+c * x(ndm,nen)- coordenadas nodais locais                              *
+c * u(nst)    - solucao anterior                                       *
+c * v(nst)    - derivada primira do tempo                              *
+c * vel(*)    - campo de velocidade                                    *
+c * p(nst)     - nao definido                                          *
+c * s(nst,nst) - nao definido                                          *
+c * ndm - dimensao                                                     *
+c * nst - numero de graus de liberdade por elemento                    *
+c * nel - numero do elemento                                           *
+c * iel - tipo   do elemento                                           *
+c * isw - codigo de instrucao                                          *
+c * ma   -  numero de material do elemento                             *
+c * nlit -  numero da iteracao nao linear                              *
+c * ilib -  codigo da biblioteca                                       *     
+c * ------------------------------------------------------------------ * 
+c * Parametros de saida:                                               *
+c * ------------------------------------------------------------------ * 
+c * e - constantes fisicas                                             *
+c * s - matriz de elemento                                             *
+c * p - isw = 2  residuo                                               *
+c **********************************************************************
+      implicit none
+      integer iq(*),iel,nel,ndm,nst,isw,ilib,ma,nlit
+      real*8 e(*),x(*),u(*),v(*),p(*),s(nst,*),vel(*)
+c ......................................................................
+      goto (100 , 200, 300      ! elmt01_tr ,            ,
+     1     ,400 , 500, 600      !           ,            ,
+     2     ,700 , 800, 900      !           ,            ,
+     3     ,1000,1100,1200      !           ,            ,              
+     4     ,1300,1400,1500      !           ,            ,         
+     5     ,1600,1700,1800      !           ,            ,         
+     6     ,1900,2000,2100      !           ,            ,  
+     7     ) iel
+c ......................................................................
+   10 write(*,9000) iel,nel
+      call stop_mef()
+c ......................................................................
+  100 continue
+ 1200 continue
+      if (ilib .eq. 1) then  
+c     Elemento unidimensional 2 nos (Garlekin)
+        call elmt01_trans(e, iq, x, u, v, vel, p, s, ndm, nst, nel, isw)
+      endif 
+      return       
+c ......................................................................    
+c
+c ... campos reservados para expancoes futuras de elementos
+  200 continue
+  300 continue
+  400 continue
+  500 continue
+  600 continue
+  700 continue
+  800 continue
+  900 continue
+ 1000 continue
+ 1100 continue
+ 1300 continue
+ 1400 continue
+ 1500 continue
+ 1600 continue
+ 1700 continue
+ 1800 continue
+ 1900 continue
+ 2000 continue
+ 2100 continue
+      go to 10
+      return
+c ......................................................................       
+ 9000 format(1x,'SUBROUTINE ELMLIBPTRANS:'
+     .,/,5x,'tipo de elemento ',i2,' nao existente, elemento ',i9,' !')
+       end
+c **********************************************************************
+c
+c **********************************************************************
       subroutine elmlib_pm(e  ,iq1 ,iq2
      1                    ,x  ,u   ,p0 
      2                    ,dp ,p   ,s   ,v1      ,v2 
@@ -88,7 +177,7 @@ c ......................................................................
 c ......................................................................
  1200 continue
       if (ilib .eq. 1) then  
-c     Elemento tetraedro de 10 nos (poromec-elastic)
+c     Elemento de bar 3 nos (poromec-elastic)
         call elmt12_pm(e,iq1,iq2,x,u,dp,p,s,v1,ndm,nst,nel,isw
      .                ,block_pu)
       endif 

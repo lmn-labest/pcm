@@ -1,14 +1,18 @@
       subroutine rdat_pcm(nnode     ,nnodev    ,numel      ,numat
-     1                  ,nen        ,nenv      ,ntn        ,ndf
-     2                  ,ndm        ,nst       ,i_ix       ,i_ie 
-     3                  ,i_inum     ,i_e       ,i_x        ,i_id 
-     4                  ,i_nload    ,i_eload   ,i_eloadp   ,i_f
-     5                  ,i_u        ,i_u0      ,i_tx0      ,i_dp
-     6                  ,i_vel_darcy,i_tx1p    ,i_tx2p     ,i_epsp    
-     7                  ,i_plastic  ,i_v
-     8                  ,i_porosity ,i_fnno    ,i_elplastic,i_vpropel
-     9                  ,fstress0   ,fporomec  ,print_quad ,plastic
-     1                  ,vprop      ,cc_macros ,nin     )
+     1                  ,nen        ,nenv      ,ntn        ,ndm 
+     2                  ,ndf        ,ndf_tr    ,nst       ,nst_tr 
+     3                  ,i_ix       ,i_ie 
+     4                  ,i_inum     ,i_e       ,i_x        ,i_id 
+     5                  ,i_nload    ,i_eload   ,i_eloadp   ,i_f
+     6                  ,i_u        ,i_u0      ,i_tx0      ,i_dp
+     7                  ,i_vel_darcy,i_tx1p    ,i_tx2p     ,i_epsp    
+     8                  ,i_id_tr     ,i_nload_tr,i_eload_tr ,i_f_tr
+     9                  ,i_u_tr     ,i_u0_tr   ,i_v_tr    
+     1                  ,i_plastic 
+     2                  ,i_porosity ,i_fnno    ,i_elplastic,i_vpropel
+     3                  ,fstress0   ,fporomec  ,f_trans
+     4                  ,print_quad ,plastic
+     5                  ,vprop      ,cc_macros ,nin     )
 c **********************************************************************
 c * Data de criacao    : 10/01/2016                                    *
 c * Data de modificaco : 20/05/2020                                    *
@@ -28,18 +32,20 @@ c * numat - numero de materiais                                        *
 c * nen   - numero max. de nos por elemento                            *
 c * nenv  - numero max. de nos geometicos por elemento                 *
 c * ntn   - numero tensoes no tensor de tensao (ntn = 4 2D; ntn = 6 3D)*
-c * ndf   - numero max. de graus de liberdade por no                   *
+c * ndf   - numero max. de graus de liberdade por no poromec           *
+c * ndf_tr- numero max. de graus de liberdade por no transporte        *
 c * ndm   - dimensao (1, 2 ou 3)                                       *
 c * nst   - numero de graus de liberdade por elemento                  *
+c * nst_tr- numero de graus de liberdade por elemento                  *
 c * i_ix    - ponteiro para conetividades                              *
-c * i_id    - ponteiro para restricoes nodais (poro_mecanico)          *
 c * i_ie    - ponteiro para materiais                                  *
-c * i_nload - ponteiro para o arranjo nload (poro_mecanico)            *
-c * i_eload - ponteiro para o arranjo eload (poro_mecanico-mecanico)   *
-c * i_eloadp- ponteiro para o arranjo eload (poro_mecanico-hidraulico) *
 c * i_inum  - ponteiro para o arranjo inum                             *
 c * i_e     - ponteiro para o arranjo e                                *
 c * i_x     - ponteiro para o arranjo x                                *
+c * i_id    - ponteiro para restricoes nodais (poro_mecanico)          *
+c * i_nload - ponteiro para o arranjo nload (poro_mecanico)            *
+c * i_eload - ponteiro para o arranjo eload (poro_mecanico-mecanico)   *
+c * i_eloadp- ponteiro para o arranjo eload (poro_mecanico-hidraulico) *
 c * i_f     - ponteiro para o arranjo f (poro_mecanico)                *
 c * i_u     - ponteiro para o arranjo u (poro_mecanico)                *
 c * i_u0    - ponteiro para o arranjo u0(poro_mecanico)                *
@@ -49,6 +55,13 @@ c * i_dp    - ponteiro para o arranjo deltaP(poro_mecanico)            *
 c * i_txp1  - ponteiro para o arranjo txp(poro_mecanico)               *
 c * i_txp2  - ponteiro para o arranjo txp(poro_mecanico)               *
 c * i_epsp  - ponteiro para o arranjo espp(poro_mecanico)              *
+c * i_id_tr    - ponteiro para restricoes nodais (transporte)          *
+c * i_nload_tr - ponteiro para o arranjo nload (transporte)            *
+c * i_eload_tr- ponteiro para o arranjo eload (transporte)             *
+c * i_f_tr  - ponteiro para o arranjo f (transporte)                   *
+c * i_u_tr  - ponteiro para o arranjo u (transporte)                   *
+c * i_u0_tr - ponteiro para o arranjo u0(transporte)                   *
+c * i_v_tr  - ponteiro para o arranjo v (transporte)                   *
 c * i_plastic   - ponteiro para o arranjo espp(poro_mecanico)          *
 c * i_porosity  - ponteiro para o arranjo espp(poro_mecanico)          *
 c * i_v     - ponteiro para o arranjo v (termico)                      *
@@ -100,7 +113,8 @@ c ......................................................................
       include 'termprop.fi'
 c ......................................................................
       character*15  cc_macros(100)
-      integer nnodev,nnode,numel,numat,nen,nenv,ndf,ndft,ndm,nst,ntn
+      integer nnodev,nnode,numel,numat,nen,nenv,ndm
+      integer ndf,ndf_tr,nst,nst_tr,ntn
       integer maxgrade,iplastic
 c ... ponteiros      
       integer*8 i_e,i_x,i_f,i_nload,i_eload,i_eloadp,i_inum
@@ -108,6 +122,8 @@ c ... ponteiros
       integer*8 i_ix,i_id,i_ie,i_porosity,i_elplastic,i_vpropel
       integer*8 i_nelcon,i_nodcon,i_nincid,i_incid,i_fnno,i_aux,i_v
       integer*8 i_vel_darcy
+      integer*8 i_id_tr,i_nload_tr,i_eload_tr,i_f_tr,i_u_tr,i_u0_tr
+      integer*8 i_v_tr  
 c ......................................................................
       integer nin
       integer j,nmc,totnel,nmacros,itmp
@@ -115,7 +131,7 @@ c ......................................................................
       character*80 fname
       integer naux
       integer nincl /7/
-      logical fstress0,fporomec,plastic,print_quad,vprop(*)
+      logical fstress0,fporomec,f_trans,plastic,print_quad,vprop(*)
       logical f_read_el /.false./
       logical el_quad  /.false./
       logical mk_el_quad  /.false./
@@ -130,23 +146,20 @@ c ......................................................................
      6           'hydrostatic    ','hydrostress    ','elmtpresloads  ',
      7           'loads          ','               ','               ',
      8           'initialdisp    ','initialpres    ','initialstress  ',
-     9           'parallel       ','insert         ','return         ',
-     1           'tria3ov        ','quad4ov        ','tetra4ov       ',
-     2           'hexa8ov        ','tetra10ov      ','hexa20ov       ',
-     3           '               ','fmaterials     ','end            '/
+     9           '               ','insert         ','return         ',
+     1           'constrainco2   ','nodalloadsco2  ','vel            ',
+     2           '               ','               ','               ',
+     3           'edp            ','fmaterials     ','end            '/
       data nmc /39/      
 c ......................................................................
 c
-c ... Leitura dos parametros da malha: nnode,numel,numat,nen,ndf,ndm
+c ... Leitura dos parametros da malha: nnode,numel,numat,nen,ndm
       print*,'loading parameters ...'
-      call parameters(nnodev,numel,numat,nen,ndf,ndm,nin)
+      call parameters_pm(nnodev,numel,numat,nen,ndm,nin)
       print*,'load.'
       nnode  = nnodev
       nst    = 0
-c ......................................................................
-c
-c ... tipo do problema
-      fporomec = .false.
+      nst_tr = 0
 c ......................................................................
 c
 c ...
@@ -155,6 +168,13 @@ c ...
       i_epsp      = 1
       i_plastic   = 1
       i_elplastic = 1
+      i_dp        = 1 
+      i_u         = 1
+      i_u_tr      = 1
+      i_porosity  = 1
+c ......................................................................
+c
+   
 c ... temporario
       if( nen .eq. 10 )then
         npi = 4
@@ -162,33 +182,7 @@ c ... temporario
         npi = 64
       endif       
 c .....................................................................
-c
-c ... 
-      if(ndm .eq. 1) then
-c ... poro mecanico 
-        if(ndf .eq. 2) then
-          fporomec = .true.
-        endif
-      endif
-c .....................................................................
-c
-c ... 
-      if(ndm .eq. 2) then
-c ... poro mecanico
-        if(ndf .eq. 3) then
-          fporomec = .true.
-        endif
-c .....................................................................
-c
-c ...
-      elseif(ndm .eq. 3) then
-c ... poro mecanico
-        if(ndf .eq. 4) then
-          fporomec = .true.
-        endif
-      endif
-c ......................................................................
-c
+c 
 c ...
       nbar2(1:4)    = 0      
       ntria3(1:4)   = 0
@@ -200,50 +194,56 @@ c ...
 c ......................................................................
 c
 c ... numero do tensor de tensoes
-c ... | sxx |       
-      if( ndm .eq. 1) then
-        ntn = 1      
+c ... | sxx |    
+      if(fporomec) then   
+        if( ndm .eq. 1) then
+          ntn = 1      
 c ... | sxx syy szz sxy  0 0 0|      
-      else if( ndm .eq. 2) then
-        ntn = 4
+        else if( ndm .eq. 2) then
+          ntn = 4
 c ... | sxx syy szz  sxy syz sxz |
-      else if(ndm .eq. 3) then
-        ntn = 6
+        else if(ndm .eq. 3) then
+          ntn = 6
+        endif
       endif
 c ......................................................................
 c
 c ......................................................................
 c   
+c     Alocacao de arranjos na memoria: 
+c     ---------------------------------------------------------------
+c     | ix | ie | e | x | vel_darcy |
+c     ---------------------------------------------------------------
+c
+      i_ix        = alloc_4('ix      ',nen+1,numel)
+      i_ie        = alloc_4('ie      ',    1,numat)
+      i_e         = alloc_8('e       ', prop,numat)
+      i_x         = alloc_8('x       ',  ndm,nnodev)
+      i_vel_darcy = alloc_8('vel_dar ',  ndm,nnodev)
+      call mzero(ia(i_ix),numel*(nen+1))
+      call mzero(ia(i_ie),numat) 
+      call azero(ia(i_e),numat*prop)
+      call azero(ia(i_x),nnodev*ndm)       
+      call azero(ia(i_vel_darcy),nnodev*ndm)  
+c ......................................................................
+c   
 c     Alocacao de arranjos na memoria: poromecanico
 c     elastic
 c     ---------------------------------------------------------------
-c     | ix | ie | e | x | eload | vel_darcy |
+c     | eload |
 c     ---------------------------------------------------------------
 c     plastic
 c     ---------------------------------------------------------------
-c     | ix | ie | e | x | eload | vel_darcy | txp1 | txp2 | espsp |
-c
-c     | plastcic |
+c     | eload | txp1 | txp2 | espsp | plastcic | 
+c     
 c     ---------------------------------------------------------------
-c     proppriedades variaveis com a porosidade
+c     propriedades variaveis com a porosidade
 c     ---------------------------------------------------------------
 c     | vpropel |                                                    
 c     ---------------------------------------------------------------
-      if(fporomec) then
-        i_ix        = alloc_4('ix      ',nen+1,numel)
-        i_ie        = alloc_4('ie      ',    1,numat)
+      if(fporomec) then      
         i_eload     = alloc_4('eload   ',    7,numel)
-        i_eloadp    = alloc_4('eloadp  ',    7,numel)
-        i_e         = alloc_8('e       ', prop,numat)
-        i_x         = alloc_8('x       ',  ndm,nnodev)
-        i_vel_darcy = alloc_8('vel_dar ',  ndm,nnodev)
-        call mzero(ia(i_ix),numel*(nen+1))
-        call mzero(ia(i_ie),numat) 
-        call azero(ia(i_e),numat*prop)
-        call mzero(ia(i_eload),numel*7)
-        call mzero(ia(i_eloadp),numel*7)
-        call azero(ia(i_x),nnodev*ndm)       
-        call azero(ia(i_vel_darcy),nnodev*ndm)    
+        i_eloadp    = alloc_4('eloadp  ',    7,numel)         
         if(plastic) then  
           i_elplastic= alloc_4('elplast ',      1,numel)
           i_tx1p     = alloc_8('tx1p    ',ntn*npi,numel)
@@ -264,6 +264,17 @@ c     ---------------------------------------------------------------
       endif 
 c ......................................................................
 c
+c     Alocacao de arranjos na memoria: transporte
+c     
+c     ---------------------------------------------------------------
+c     | eload_tr | 
+c     ---------------------------------------------------------------
+      if(f_trans) then
+        i_eload_tr  = alloc_4('eload_tr',    7,numel)       
+        call mzero(ia(i_eload_tr),numel*7)
+      endif 
+c ......................................................................
+c
 c ......................................................................
       totnel  = 0            
       nmacros = 0
@@ -276,25 +287,43 @@ c     ---------------------------------------------------------------
    50 continue
       if (totnel .eq. numel) then
         i_inum  = alloc_4('inum    ',    1,nnode)  
-        i_id    = alloc_4('id      ',  ndf,nnode)
-        i_nload = alloc_4('nload   ',  ndf,nnode)
-        i_f     = alloc_8('f       ',  ndf,nnode)
-        i_u     = alloc_8('u       ',  ndf,nnode)
-        i_u0    = alloc_8('u0      ',  ndf,nnode)
-        i_tx0   = alloc_8('tx0     ',  ntn,nnode)
-        call mzero(ia(i_inum) ,nnode)  
-        call mzero(ia(i_id)   ,nnode*ndf)
-        call mzero(ia(i_nload),nnode*ndf)
-        call azero(ia(i_f)    ,nnode*ndf)
-        call azero(ia(i_u)    ,nnode*ndf)
-        call azero(ia(i_u0)   ,nnode*ndf)
-        call azero(ia(i_tx0)  ,nnode*ntn)
-c ...
+        
+c ... poromec
         if(fporomec) then
+          i_id    = alloc_4('id      ',  ndf,nnode)
+          i_nload = alloc_4('nload   ',  ndf,nnode)
+          i_f     = alloc_8('f       ',  ndf,nnode)
+          i_u     = alloc_8('u       ',  ndf,nnode)
+          i_u0    = alloc_8('u0      ',  ndf,nnode)
+          i_tx0   = alloc_8('tx0     ',  ntn,nnode)
           i_dp       = alloc_8('dpres   ',    1,nnode)
           i_porosity = alloc_8('poro    ',    1,nnode)
+          call mzero(ia(i_inum) ,nnode)  
+          call mzero(ia(i_id)   ,nnode*ndf)
+          call mzero(ia(i_nload),nnode*ndf)
+          call azero(ia(i_f)    ,nnode*ndf)
+          call azero(ia(i_u)    ,nnode*ndf)
+          call azero(ia(i_u0)   ,nnode*ndf)
+          call azero(ia(i_tx0)  ,nnode*ntn)
           call azero(ia(i_dp)      ,nnode)
           call azero(ia(i_porosity),nnode)
+        endif    
+c .....................................................................
+c
+c ... transporte
+        if(f_trans) then
+          i_id_tr    = alloc_4('id_tr   ',  ndf_tr,nnodev)
+          i_nload_tr = alloc_4('nload_tr',  ndf_tr,nnodev)
+          i_f_tr     = alloc_8('f_tr    ',  ndf_tr,nnodev)
+          i_u_tr     = alloc_8('u_tr    ',  ndf_tr,nnodev)
+          i_u0_tr    = alloc_8('u0_tr   ',  ndf_tr,nnodev)
+          i_v_tr     = alloc_8('v_tr    ',  ndf_tr,nnodev)
+          call mzero(ia(i_id_tr)   ,nnodev*ndf_tr)
+          call mzero(ia(i_nload_tr),nnodev*ndf_tr)
+          call azero(ia(i_f_tr)    ,nnodev*ndf_tr)
+          call azero(ia(i_u_tr)    ,nnodev*ndf_tr)
+          call azero(ia(i_u0_tr)   ,nnodev*ndf_tr)
+          call azero(ia(i_v_tr)    ,nnodev*ndf_tr)
         endif    
 c .....................................................................
       endif
@@ -326,7 +355,7 @@ c ......................................................................
      6      1450,1500,1550,    !loads        ,             ,
      7      1600,1650,1700,    !initialdisp  ,             ,initialstress
      8      1750,1800,1850,    !             ,insert       ,return
-     9      1900,1950,2000,    !             ,             ,        
+     9      1900,1950,2000,    !constrainco2 ,nodalloadsco2,vel     
      1      2050,2100,2150,    !             ,             ,        
      2      2200,2250,2300) j  !             ,fmaterials   ,end
 c ......................................................................
@@ -350,8 +379,9 @@ c
       call elconn(ia(i_ix),nen+1,2,nbar2(1),numel,fMixedMesh,nin)
       nbar2(2) = totnel+1
       totnel   = totnel + nbar2(1)             
-      nst        = nenv*ndf
-c ... transforma os elementos lineares em quadraticos (4 nos)
+      if(fporomec) nst    = nenv*ndf
+      if(f_trans)  nst_tr = nenv*ndf_tr
+c ... transforma os elementos lineares em quadraticos (3 nos)
       if( nen .eq. 3) then
         if(fporomec) then
           itmp = nen*(ndf-1) + nenv   
@@ -669,28 +699,36 @@ c
 c ... 
 c
  1900 continue
-      print*,'loading ...'
+      print*,'loading constrainco2 ...'
+      call bound(ia(i_id_tr),nnodev,ndf_tr,nin,1)
       print*,'done.'
-      go to 50
+      go to 100
 c ......................................................................  
 c
 c ... 
 c
  1950 continue
-      print*,'loading ...'
+      print*,'loading nodalloadsco2 ...'
+      if(f_read_el) then
+        call bound(ia(i_nload_tr),nnodev,ndf_tr,nin,2) 
+      else
+        print*,'MACRO: nodalloads !! Unread Elements'
+        call stop_mef()
+      endif
       print*,'done.'
-      go to 50
+      go to 100
 c ......................................................................
 c
-c ... tetra4ov                              
+c ... vel                             
 c      
  2000 continue
-      print*,'loading ...'
+      print*,'loading vel'
+      call coord(ia(i_vel_darcy),nnodev,ndm,nin)
       print*,'done.'
-      go to 50                   
+      go to 100                   
 c ......................................................................
 c
-c ... hexa8ov                              
+c ...                               
 c      
  2050 continue
       print*,'loading ...'
@@ -698,7 +736,7 @@ c
       go to 50                  
 c ......................................................................
 c
-c ... tetra10ov                            
+c ...                            
 c      
  2100 continue
       print*,'loading ...'
@@ -706,7 +744,7 @@ c
       go to 50                  
 c ......................................................................
 c
-c ... hexa20ov                             
+c ...                             
 c      
  2150 continue
       print*,'loading ...'
@@ -750,80 +788,24 @@ c
 c
 c ... Inicializa as condicoes de contorno no vetor u:
 c
-      if(ndf.gt.0) then 
+      if(fporomec) then 
 c ... cc macro nodalsources
         call boundc(nnode,ndf,ia(i_id),ia(i_f),ia(i_u0))
 c ... cc macro nodal lodas
         call bound_nodalloads(ia(i_x),ia(i_id),ia(i_u0)
-     2                       ,ia(i_nload),nnode,ndf,ndm)
+     .                       ,ia(i_nload),nnode,ndf,ndm)
+        call aequalb(ia(i_u),ia(i_u0),nnode*ndf)
       endif  
-      call aequalb(ia(i_u),ia(i_u0),nnode*ndf)
+      if(f_trans) then 
+c ... cc macro nodalsources
+        call boundc(nnodev,ndf_tr,ia(i_id_tr),ia(i_f_tr),ia(i_u0_tr))
+c ... cc macro nodal lodas
+        call bound_nodalloads(ia(i_x),ia(i_id_tr),ia(i_u0_tr)
+     .                       ,ia(i_nload_tr),nnodev,ndf_tr,ndm)
+        call aequalb(ia(i_u_tr),ia(i_u0_tr),nnodev*ndf_tr)
+      endif       
 c .....................................................................
 c
-c ... escrita de todes os nohs
-      if(el_quad) then
-        if(print_quad) then
-          if(mk_el_quad) then
-            i_aux   = i_x
-            i_x     = alloc_8('xq      ',  ndm,nnode)
-c ... gerando as coordenada quadraticas 
-            call mk_coor_quad(ia(i_aux) ,ia(i_x),ia(i_ix)
-     .                     ,numel       ,nen  
-     .                     ,nnode       ,nnodev  ,ndm)
-c .....................................................................
-c
-c ...
-            i_aux   = dealloc('x       ')
-            i_x     =  locate('xq      ')
-            i_inum  =  locate('inum    ')  
-            i_id    =  locate('id      ')
-            i_nload =  locate('nload   ')
-            i_f     =  locate('f       ')
-            i_u     =  locate('u       ')
-            i_u0    =  locate('u0      ')
-            i_tx0   =  locate('tx0     ')
-            if(fporomec) then
-              i_dp       = locate('dpres   ')
-              i_porosity = locate('poros   ')
-            endif
-c ...
-            i_ix    = locate('ix      ')
-            i_ie    = locate('ie      ')
-            i_eload = locate('eload   ')
-            i_e     = locate('e       ')
-            i_fnno  = locate('ffno    ')
-            if(plastic) then  
-              i_elplastic = locate('elplast ')
-              i_tx1p      = locate('tx1p    ')
-              i_tx2p      = locate('tx2p    ')
-              i_epsp      = locate('epsp    ')
-              i_plastic   = locate('plastic ')
-            endif
-            if(vprop(1)) then
-              i_vpropel  = locate('vpropel ')
-            endif
-c .....................................................................
-c
-c ...
-            ntetra10(1:4) = ntetra4(1:4)
-            nhexa20(1:4)  = nhexa8(1:4)
-            ntetra4(1:4)  = 0
-            nhexa8(1:4)   = 0
-          endif
-c ......................................................................
-c
-c ... escrita apenas dos vertices
-        else
-          if(mk_el_quad .eqv. .false.) then
-            ntetra4(1:4)  = ntetra10(1:4)
-            nhexa8(1:4)   = nhexa20(1:4)
-            ntetra10(1:4) = 0
-            nhexa20(1:4)  = 0
-          endif 
-c ......................................................................
-        endif
-c ......................................................................
-      endif  
 c ......................................................................
       return
 c ......................................................................
@@ -1565,8 +1547,7 @@ c ......................................................................
 c ......................................................................
       return
       end   
-      subroutine parameters_pm(nnode,numel,numat,nen,ndf,ndm,plastic
-     .                         ,nin)
+      subroutine parameters_pm(nnode,numel,numat,nen,ndm,nin)
 c **********************************************************************
 c *                                                                    *
 c *   Parameters                                                       *
@@ -1575,18 +1556,17 @@ c **********************************************************************
       implicit none
       include 'string.fi'
       character*12 string
-      integer nnode,numel,numat,nen,ndf,ndft,ndm,plastic,nin,n,j
+      integer nnode,numel,numat,nen,ndm,nin,n,j
       logical flag(7)
       character*8 macro(7)
       integer i,nmc         
       data macro/'nnode   ' ,'numel   ','numat   '
-     .          ,'maxno   ' ,'ndf     ','dim     '
-     .          ,'plastic '/
-      data nmc /7/
+     .          ,'maxno   ' ,'dim     ','        '
+     .          ,'        '/
+      data nmc /5/
 c ......................................................................
       flag(1:nmc) = .false.
 c ...
-      plastic = 0
       flag(7) = .true.
 c ......................................................................
       n       = 0
@@ -1617,23 +1597,12 @@ c ......................................................................
             read(string,*,err = 100,end = 100) nen
             flag(4) = .true.
             n = n + 1
-         elseif (string .eq. 'ndf') then
-            call readmacro(nin,.false.)
-            write(string,'(12a)') (word(j),j=1,12)
-            read(string,*,err = 100,end = 100) ndf
-            flag(5) = .true.
-            n = n + 1
          elseif (string .eq. 'dim') then
             call readmacro(nin,.false.)
             write(string,'(12a)') (word(j),j=1,12)
             read(string,*,err = 100,end = 100) ndm
-            flag(6) = .true.
-            n = n + 1
-         elseif (string .eq. 'plastic') then
-            call readmacro(nin,.false.)
-            write(string,'(12a)') (word(j),j=1,12)
-            read(string,*,err = 100,end = 100) plastic
-            n = n + 1
+            flag(5) = .true.
+            n = n + 1        
          endif
          call readmacro(nin,.false.)
          write(string,'(8a)') (word(j),j=1,8)
@@ -2269,7 +2238,7 @@ c *********************************************************************
 c
 c *********************************************************************
 c * Data de criacao    : 20/03/2017                                   *
-c * Data de modificaco : 26/03/2017                                   *
+c * Data de modificaco : 24/05/2020                                   *
 c * ------------------------------------------------------------------*
 c * file_prop : : leitura do arquivo com as propriedades do material  *
 c * ------------------------------------------------------------------*
@@ -2291,7 +2260,7 @@ c *********************************************************************
       implicit none
       include 'string.fi'
       character*15 string,macro(15)
-      character*16 ex(14)
+      character*16 ex(11)
       character*80 fname
       logical etyp,fread(15)
       real*8 e(*)
@@ -2303,7 +2272,7 @@ c *********************************************************************
      1           'mbiot          ','cbiot          ','density        ',
      2           'fdensity       ','porosity       ','l_plastic      ',
      3           'k_plastic      ','mcs            ','pc0            ',
-     4           'elType         ','               ','               '/
+     4           'elType         ','dCO2           ','               '/
 c ... exemplo
       data ex/'elType        37',
      1        'modE         1.0',
@@ -2314,11 +2283,8 @@ c ... exemplo
      6        'density      1.0', 
      7        'fdensity     1.0',
      8        'porosity     0.72',
-     9        'l_plastic    0.2',
-     1        'k_plastic    0.2',
-     2        'mcs          1.2',
-     3        'pc0          1.0',
-     4        'end             '/
+     9        'dCO2         1.0', 
+     1        'end             '/
 c .....................................................................
 c
 c ...
@@ -2332,7 +2298,7 @@ c ... modulo de elasticidade
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(1)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... poisson
@@ -2341,7 +2307,7 @@ c ... poisson
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(2)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... permeability
@@ -2350,7 +2316,7 @@ c ... permeability
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(3)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... mbiot        
@@ -2359,7 +2325,7 @@ c ... mbiot
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(4)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... cbiot        
@@ -2368,7 +2334,7 @@ c ... cbiot
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(5)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... density      
@@ -2377,7 +2343,7 @@ c ... density
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(6)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... fdensity      
@@ -2386,7 +2352,7 @@ c ... fdensity
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(7)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... ivoid      
@@ -2395,7 +2361,7 @@ c ... ivoid
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(8)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... l_plastic      
@@ -2404,7 +2370,7 @@ c ... l_plastic
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(9)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... k_plastic      
@@ -2413,7 +2379,7 @@ c ... k_plastic
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(10)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... mcs      
@@ -2422,7 +2388,7 @@ c ... mcs
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(11)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... pc0      
@@ -2431,7 +2397,7 @@ c ... pc0
             fread(i) = .true.
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
-            read(string,*,err = 100,end = 100) e(12)
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
 c
 c ... elType   
@@ -2441,6 +2407,15 @@ c ... elType
             call readmacro(nin,.false.)
             write(string,'(15a)') (word(j),j=1,15)            
             read(string,*,err = 100,end = 100) etype
+c .....................................................................
+c
+c ... dCO2     
+         else if (string .eq. macro(14)) then
+            i = 14
+            fread(i) = .true.
+            call readmacro(nin,.false.)
+            write(string,'(15a)') (word(j),j=1,15)            
+            read(string,*,err = 100,end = 100) e(i)
 c .....................................................................
          endif 
 c .....................................................................
@@ -2711,6 +2686,122 @@ c ......................................................................
 c *********************************************************************
 c
 c *********************************************************************
+c * Data de criacao    : 25/05/2020                                   *
+c * Data de modificaco : 00/00/00000                                  *
+c * ------------------------------------------------------------------*
+c * read_edp : leitura das edp                                        *
+c * ------------------------------------------------------------------*
+c * Parametros de entrada :                                           *
+c * ----------------------------------------------------------------- *
+c * f_pmec    - poromecanica                                          *
+c * ndf_pm    - graus de liberdadee poromecanico                      *
+c * f_trans   - transporte                                            *
+c * ndf_tr    - graus de liberdade transporte                         *
+c * nin       - arquivo de entrada                                    *
+c * ----------------------------------------------------------------- *
+c * Parametros de saida :                                             *
+c * ----------------------------------------------------------------- *
+c * ----------------------------------------------------------------- *
+c * ----------------------------------------------------------------- *
+c * OBS:                                                              *
+c * ----------------------------------------------------------------- *
+c *********************************************************************
+      subroutine read_edp(f_pmec , ndf_pm,f_trans ,ndf_tr,nin)
+      implicit none
+      include 'string.fi'
+      character(len=15) string,macro(10)
+      character(len=20) ex(3)
+      character(len=80) fname
+      integer ndf_pm, ndf_tr    
+      logical f_pmec, f_trans 
+      integer i,j,cont,nmacro
+      integer nin 
+      integer nincl /7/
+      data nmacro /10/
+      data macro/'help           ','trans          ','poromec        ',
+     1           '               ','               ','               ',
+     2           '               ','               ','               ',
+     3           '               '/
+c .....................................................................
+c
+c ... exemplo
+      data ex /'trans              1','poromec            2',    
+     .         'end                 '/
+c .....................................................................
+c
+c ... arquivo de config
+      call readmacro(nin,.false.)
+      write(fname,'(80a)') (word(j),j=1,strl)
+      open(nincl, file= fname,status= 'old',err=200,action='read')
+c .....................................................................
+c
+c ...
+      f_pmec  = .false.
+      f_trans = .false.
+      ndf_pm = 0
+      ndf_tr = 0
+      cont = 0
+      call readmacro(nincl,.true.)
+      write(string,'(15a)') (word(j),j=1,15)
+      do while ( (string .ne. 'end') .and. (cont .le. 9) )
+         cont = cont + 1
+c ... help
+          if (string .eq. macro(1)) then
+            goto 300
+c .....................................................................
+c
+c ... trans
+         elseif (string .eq. macro(2)) then
+            i = 1
+            f_trans = .true.
+            call readmacro(nincl,.false.)
+            write(string,'(15a)') (word(j),j=1,15)            
+            read(string,*,err = 100,end = 100) ndf_tr
+c .....................................................................
+c
+c ... poromec
+         elseif (string .eq. macro(3)) then
+            i = 2
+            f_pmec = .true.
+            call readmacro(nincl,.false.)
+            write(string,'(15a)') (word(j),j=1,15)
+            read(string,*,err = 100,end = 100) ndf_pm
+         endif
+c .....................................................................
+c
+c ... 
+         call readmacro(nincl,.true.)
+         write(string,'(15a)') (word(j),j=1,15)
+      end do
+c ......................................................................
+c
+c ...
+      if( cont .eq. 0 ) goto 300
+      close(nincl)
+      return  
+c ......................................................................
+ 100  continue
+      print*,'*** Erro in reading the config file !',macro(i)
+      call stop_mef()                          
+ 200  continue
+      print*,'File ',trim(fname),' not found !'
+      call stop_mef() 
+ 300  continue      
+      print*,'*** Error reading edp macro !'
+      write(*,'(2x,a)') '******************************'
+      write(*,'(2x,a)') 'Example usage of macro edp:   '
+      write(*,'(2x,a)') '------------------------------'
+      do i = 1, 3
+        write(*,'(2x,a)') ex(i)
+      enddo  
+      write(*,'(2x,a)') '------------------------------'
+      write(*,'(2x,a)') '******************************'
+      call stop_mef()
+c ......................................................................
+      end
+c *********************************************************************
+c
+c *********************************************************************
 c * Data de criacao    : 13/10/2016                                   *
 c * Data de modificaco : 27/05/2017                                   *
 c * ------------------------------------------------------------------*
@@ -2957,7 +3048,7 @@ c **********************************************************************
 c
 c **********************************************************************
 c * Data de criacao    : 27/09/2016                                    *
-c * Data de modificaco : 12/04/2018                                    *
+c * Data de modificaco : 24/05/2020                                    *
 c * ------------------------------------------------------------------ *
 c * SET_PRINT_VTK : leitualeitura das configuracoes basicas de excucao *
 c * ------------------------------------------------------------------ *
@@ -2981,8 +3072,8 @@ c *          fluxo de darcy  (8)                                       *
 c *          delta prosidade (9)                                       *
 c *          pconsolidation  (10)                                      *
 c *          eplastic        (11)                                      *
-c *          temperatura     (12)                                      *
-c *          fluxo de calor  (13)                                      *      
+c *          concentracao CO2(12)                                      *
+c *                          (13)                                      *      
 c * ------------------------------------------------------------------ * 
 c * OBS:                                                               *
 c * ------------------------------------------------------------------ * 
@@ -3001,8 +3092,8 @@ c **********************************************************************
       data macro/'quadratic     ','desloc        ','pressure      '
      1          ,'dpressure     ','totalstress   ','biotstress    '
      2          ,'terzaghistress','darcyflux     ','porosity      '
-     3          ,'pconsolidation','elplastic     ','temperature   '
-     4          ,'heatFlux      ','(void)        ','(void)        '/
+     3          ,'pconsolidation','elplastic     ','cCO2          '
+     4          ,'(void)        ','(void)        ','(void)        '/
 c ......................................................................
 c
 c ...
@@ -3017,8 +3108,8 @@ c ...
       !  9 - porosidade
       ! 10 - pconsolidation
       ! 11 - elplastic
-      ! 12 - temperature
-      ! 13 - heatflux
+      ! 12 - cCO2           
+      ! 13 -          
 c ......................................................................
 c
 c ...
@@ -3092,15 +3183,12 @@ c ... eplastic
           fprint(11) = .true.
 c .....................................................................
 c
-c ... temperature       
+c ... cCO2              
         elseif (string .eq. macro(12)) then
           fprint(12) = .true.
+        endif
 c .....................................................................
 c
-c ... heatflux          
-        elseif (string .eq. macro(13)) then
-          fprint(13) = .true.
-        endif
 c .....................................................................
         call readmacro(nincl,.true.)
         write(string,'(15a)') (word(j),j=1,15)
@@ -3108,7 +3196,7 @@ c .....................................................................
 c .....................................................................
 c
 c ...
-      do j = 1, 13    
+      do j = 1, 12    
         if(my_id.eq.0)print*,macro(j),':',fprint(j)
       enddo
 c ......................................................................
