@@ -107,16 +107,8 @@ c ......................................................................
 c
 c ...
       if(isw .eq. 2 .or. isw .eq. 3)then
-        det = 0.d0
-        do i = 1, ndm
-          det = det + (x(i,2)-x(i,1))*(x(i,2)-x(i,1))
-        enddo   
-        if (det .le. 0.d0) then 
-          print*,'*** Subrotina ELMT: determinante <= 0 ',nel
-          stop
-        endif      
-        det = 0.5d0*dsqrt(det)
-      endif
+        call jacob1d(x,det,ndm,nel)
+      endif      
 c .....................................................................     
 c
 c ===
