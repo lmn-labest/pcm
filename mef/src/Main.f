@@ -290,9 +290,9 @@ c                4 (bicgstab)  , 5 (block_pcg_it), 6 (bicgstabl2)
 c                7 (minres)    , 8 (pcr)         , 9 (symmlq)
 c               10 (pardiso)   ,11 (sqmr)
 c ... stge    =  1 (csr), 2 (edges), 3 (ebe), 4 (skyline), 6 (csr3)
-      unsym   = .false.
-      solver  =  11
-      stge    =  1
+      unsym    = .false.
+      solver   =  11
+      stge     =  1
 c ... Matriz blocada 
 c     block_pu = true e n_blocks_up = 1 monta o bloco 
 c     kuu e kpp separados e nao monta o bloco kup           
@@ -679,7 +679,7 @@ c ...
          sad = 'ad_tr'  
          call datastruct(ia(i_ix),ia(i_id_tr),ia(i_inum),nnodev
      1                  ,numel   ,nen     ,ndf_tr    ,nst_tr
-     2                  ,neq_tr  ,stge    ,unsym     ,nad_tr,nadr_tr
+     2                  ,neq_tr  ,stge    ,.true.    ,nad_tr,nadr_tr
      3                  ,i_ia_tr ,i_ja_tr ,i_au_tr   ,i_al_tr,i_ad_tr 
      4                  ,sia     ,sja     ,sau       ,sal    ,sad       
      5                  ,.false.)
@@ -1199,10 +1199,10 @@ c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
       timei = get_time()
       call solv_pm(neq  ,nequ    ,neqp  
      1         ,nad     ,naduu   ,nadpp      
-     2         ,ia(i_ia),ia(i_ja),ia(i_ad)   ,ia(i_al)
-     3         ,ia(i_m) ,ia(i_b) ,ia(i_x0)   ,solvtol,maxit
-     4         ,ngram   ,block_pu,n_blocks_pu,solver,istep
-     5         ,cmaxit  ,ctol    ,alfap      ,alfau ,precond
+     2         ,ia(i_ia),ia(i_ja),ia(i_ad)   ,ia(i_au),ia(i_al)
+     3         ,ia(i_m) ,ia(i_b) ,ia(i_x0)   ,solvtol ,maxit
+     4         ,ngram   ,block_pu,n_blocks_pu,solver  ,istep
+     5         ,cmaxit  ,ctol    ,alfap      ,alfau   ,precond
      6         ,.false. ,fporomec,.false.    ,fhist_log  ,fprint 
      7         ,0       ,0       ,0          ,0     ,neq
      8         ,0       ,0       ,0          ,0     )
@@ -1381,7 +1381,7 @@ c ... forcas de volume e superficie do tempo t+dt :
      5            ,ia(i_pl)    ,ia(i_sl)     ,ia(i_ld)      
      6            ,numel       ,nenv         ,nenv     ,ndf_tr 
      7            ,ndm         ,nst_tr       ,neq_tr   ,nad_tr,nadr_tr
-     8            ,.false.     ,.true.       ,unsym    ,nen+1
+     8            ,.false.     ,.true.       ,.true.   ,nen+1
      9            ,stge,4      ,ilib         ,i
      1            ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
       elmtime = elmtime +  get_time() - timei
@@ -1412,7 +1412,7 @@ c     Residuo: b = F - M.v(n+1,i) - K.u(n+1,i)
      5            ,ia(i_pl)    ,ia(i_sl)     ,ia(i_ld)       
      6            ,numel       ,nenv         ,nenv     ,ndf_tr
      7            ,ndm         ,nst_tr       ,neq_tr   ,nad_tr ,nadr_tr 
-     8            ,.true.      ,.true.       ,unsym    ,nen+1
+     8            ,.true.      ,.true.       ,.true.   ,nen+1
      9            ,stge        ,2            ,ilib     ,i
      1           ,ia(i_colorg),ia(i_elcolor),numcolors,.false.)
       elmtime = elmtime + get_time() - timei
@@ -1428,14 +1428,14 @@ c
 c ... solver ((M + alpha.dt.K).dv(n+1,i+1)= b )
       timei = get_time()
       call solv_pm(neq_tr ,0       ,0     
-     1       ,nad_tr      ,0       ,0           
-     2       ,ia(i_ia_tr),ia(i_ja_tr),ia(i_ad_tr) ,ia(i_al_tr)
-     3       ,ia(i_m)    ,ia(i_b_tr) ,ia(i_x0_tr) ,solvtol  ,maxit
-     4       ,ngram      ,block_pu   ,n_blocks_pu ,2        ,istep
-     5       ,cmaxit     ,ctol       ,alfap       ,alfau    ,precond 
-     6       ,.false.    ,.false.    ,.false.     ,fhist_log,fprint
-     7       ,0          ,0          ,0           ,0         ,neq_tr 
-     8       ,0          ,0          ,0           ,0     )
+     1    ,nad_tr      ,0       ,0           
+     2    ,ia(i_ia_tr),ia(i_ja_tr),ia(i_ad_tr) ,ia(i_au_tr),ia(i_al_tr)
+     3    ,ia(i_m)    ,ia(i_b_tr) ,ia(i_x0_tr) ,solvtol  ,maxit
+     4    ,ngram      ,block_pu   ,n_blocks_pu ,2        ,istep
+     5    ,cmaxit     ,ctol       ,alfap       ,alfau    ,precond 
+     6    ,.false.    ,.false.    ,.false.     ,fhist_log,fprint
+     7    ,0          ,0          ,0           ,0         ,neq_tr 
+     8    ,0          ,0          ,0           ,0     )
       soltime = soltime + get_time() - timei
 c .....................................................................
 c

@@ -22,7 +22,7 @@ c *   block_it_pcg                                                     *
 c **********************************************************************
       subroutine solv_pm(neq    ,nequ    ,neqp
      1                  ,nad    ,naduu   ,nadpp
-     2                  ,ip     ,ja      ,ad         ,al 
+     2                  ,ip     ,ja      ,ad         ,au     ,al 
      3                  ,m      ,b       ,x          ,tol    ,maxit
      4                  ,ngram  ,block_pu,n_blocks_up,solver ,istep
      5                  ,cmaxit ,ctol    ,alfap      ,alfau  ,precond
@@ -43,7 +43,7 @@ c ......................................................................
       integer neq3i,neq4i,neq_doti
       integer ja(*),neq,nequ,neqp,naduu,nadpp
       integer maxit,solver,ngram,istep,n_blocks_up
-      real*8  ad(*),al(*),m(*),x(*),b(*),tol,energy
+      real*8  ad(*),au(*),al(*),m(*),x(*),b(*),tol,energy
 c ... pcg duplo
       integer cmaxit
       real*8  ctol,alfap,alfau
@@ -56,7 +56,7 @@ c ... precondicionador
 c ...................................................................... 
       integer neqovlp
       external dot,dot_par
-      external matvec_csrc_pm,matvec_csrc_sym_pm        
+      external matvec_csrc_block_pm,matvec_csrc_sym_pm        
 c     OpenMP'ed subroutines
       external dot_par_omp
       external matvec_csrc_sym_pm_omp,matvec_csrc_pm_omp
@@ -228,7 +228,7 @@ c
 c ... (sequencial+mpi)
            else 
              call call_gmres(neq   ,neqovlp,nad  
-     1                     ,ip     ,ja     ,ad     ,al 
+     1                     ,ip     ,ja     ,ad     ,au     ,al 
      2                     ,m      ,b      ,x      ,ia(i_g)
      3                     ,ia(i_h),ia(i_y),ia(i_c),ia(i_s),ia(i_r)  
      4                     ,tol    ,maxit  ,precond,fhist_solv,fprint
@@ -311,10 +311,10 @@ c ... sequencial
      2                ,ia(i_c),ia(i_h),ia(i_r),ia(i_s),ia(i_z),ia(i_y)
      3                ,tol    ,maxit 
 c ... matvec comum:
-     1                ,matvec_csrc_pm ,dot_par 
-     2                ,0        ,neqf1i,neqf2i ,neq_doti 
-     3                ,i_fmapi ,i_xfi  ,i_rcvsi,i_dspli
-     4                ,.true.  ,.true.,.true.)
+     1                ,matvec_csrc_block_pm ,dot_par 
+     2                ,0        ,neqf1i     ,neqf2i ,neq_doti 
+     3                ,i_fmapi ,i_xfi       ,i_rcvsi,i_dspli
+     4                ,.true.  ,.true.      ,.true.)
            endif 
 c .....................................................................
 c
@@ -1619,7 +1619,7 @@ c ... precondicionador
       real*8  m(*)
 c ...
       external dot_par
-      external matvec_csrc_pm        
+      external matvec_csrc_block_pm        
 c ......................................................................
 
 c ... bicgstabl2
@@ -1631,7 +1631,7 @@ c ...
      3          ,y       ,a 
      4          ,tol     ,maxit  
 c ... matvec comum:
-     6          ,matvec_csrc_pm,dot_par 
+     6          ,matvec_csrc_block_pm,dot_par 
      7          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
      8          ,i_xfi ,i_rcvsi,i_dspli
      9          ,.true.,.true. ,.true.)
@@ -1645,7 +1645,7 @@ c ... pbicgstabl2 - bicgstabl2 com precondicionador diagonal
      3          ,y       ,a      ,d      ,e      ,g      
      4          ,tol     ,maxit  
 c ... matvec comum:
-     5          ,matvec_csrc_pm,dot_par 
+     5          ,matvec_csrc_block_pm,dot_par 
      6          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
      7          ,i_xfi ,i_rcvsi,i_dspli
      8          ,.true.,.true. ,.true.)
@@ -1722,7 +1722,7 @@ c * OBS:                                                               *
 c * ------------------------------------------------------------------ *
 c **********************************************************************  
       subroutine call_gmres(neq    ,neqovlp,nad  
-     1                     ,ia     ,ja     ,ad     ,al 
+     1                     ,ia     ,ja     ,ad     ,au       ,al 
      2                     ,m      ,b      ,x      ,g
      3                     ,h      ,y      ,c      ,s        ,r     
      4                     ,tol    ,maxit  ,precond,fhist_log,fprint
@@ -1742,7 +1742,7 @@ c .....................................................................
       integer neq,neqovlp,neq_doti,nkrylov 
       integer*8 ia(*),nad
       integer ja(*)
-      real*8  ad(*),al(*),x(*),b(*)
+      real*8  ad(*),au(*),al(*),x(*),b(*)
 c ... arranjos auxiliares
       real*8 g(*),h(*),y(*),c(*),r(*),s(*)
 c ...
@@ -1754,7 +1754,7 @@ c ... precondicionador
       real*8  m(*)
 c ...
       external dot_par
-      external matvec_csrc_sym_pm,matvec_csrcr_sym_pm        
+      external matvec_csrc_pm,matvec_csrcr_sym_pm        
 c ......................................................................
 c
 c ... gmres sem precondicionador
@@ -1769,7 +1769,7 @@ c ... pbicgstabl2 - bicgstabl2 com precondicionador diagonal
 c ... overllaping
          if(ovlp) then
            call gmres2(neq,neq,nad,ia,ja 
-     1                ,ad ,al ,al ,m ,b ,x,nkrylov
+     1                ,ad ,au ,al ,m ,b ,x,nkrylov
      2                ,g  ,h  ,y  ,c ,s ,r       
      3                ,tol    ,maxit   
 c ... matvec comum:
@@ -1784,11 +1784,11 @@ c
 c ...non-overllaping
          else 
            call gmres2(neq,neq,nad,ia,ja 
-     1                ,ad ,al ,al ,m ,b ,x,nkrylov
+     1                ,ad ,au ,al ,m ,b ,x,nkrylov
      2                ,g  ,h  ,y  ,c ,s ,r       
      3                ,tol    ,maxit   
 c ... matvec comum:
-     4                ,matvec_csrc_sym_pm,dot_par 
+     4                ,matvec_csrc_pm ,dot_par 
      5                ,neqovlp
      6                ,my_id  ,neqf1i ,neqf2i ,neq_doti,i_fmapi
      7                ,i_xfi  ,i_rcvsi,i_dspli 
@@ -2045,7 +2045,7 @@ c ... precondicionador
       real*8  m(*)
 c ...
       external dot_par
-      external matvec_csrc_pm        
+      external matvec_csrc_block_pm        
 c ......................................................................
 c
 c ... gmres sem precondicionador
@@ -2078,7 +2078,7 @@ c        else
      2                ,g  ,h  ,y  ,c ,s ,r       
      3                ,tol    ,maxit   
 c ... matvec comum:
-     4                ,matvec_csrc_pm,dot_par 
+     4                ,matvec_csrc_block_pm,dot_par 
      5                ,neqovlp
      6                ,my_id  ,neqf1i ,neqf2i ,neq_doti,i_fmapi
      7                ,i_xfi  ,i_rcvsi,i_dspli 

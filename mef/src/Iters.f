@@ -1533,7 +1533,7 @@ c
 c
 c ...... Residuo g(1) = b - A x:
 c
-         call matvec(neq,nequ,ia,ja,ia(neq+2),ja(nad+1),ad,al,al(nad+1) 
+         call matvec(neq,nequ,ia,ja,ia(neq+2),ja(nad+1),ad,au,al 
      .              ,x,g(1,1)
      .              ,neqf1i,neqf2i,i_fmapi,i_xfi 
      .              ,i_rcvsi,i_dspli,dum1)
@@ -1564,8 +1564,8 @@ c
 c
 c ......... Produto g(i+1) = A.g(i):
 c
-            call matvec(neq,nequ,ia,ja,ia(neq+2),ja(nad+1),ad,al
-     .                 ,al(nad+1)
+            call matvec(neq,nequ,ia,ja,ia(neq+2),ja(nad+1),ad,au
+     .                 ,al          
      .                 ,g(1,i),g(1,i+1)
      .                 ,neqf1i,neqf2i 
      .                 ,i_fmapi,i_xfi,i_rcvsi,i_dspli,dum1)
@@ -1687,8 +1687,8 @@ c ......................................................................
 c
 c ... Norma da solucao: x*Kx
 c
-      call matvec(neq,nequ,ia,ja,ia(neq+2),ja(nad+1),ad,al,
-     .           al(nad+1),x     ,g(1,1)  ,neqf1i,neqf2i,
+      call matvec(neq,nequ,ia,ja,ia(neq+2),ja(nad+1),ad,au,
+     .           al       ,x     ,g(1,1)  ,neqf1i,neqf2i,
      .           i_fmapi,i_xfi,i_rcvsi,i_dspli,dum1)
       xkx = dot(x,g,neq_doti)
 c ......................................................................
