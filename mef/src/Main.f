@@ -1203,9 +1203,7 @@ c ... solver (Kdu(n+1,i+1) = b; du(t+dt) )
      3         ,ia(i_m) ,ia(i_b) ,ia(i_x0)   ,solvtol ,maxit
      4         ,ngram   ,block_pu,n_blocks_pu,solver  ,istep
      5         ,cmaxit  ,ctol    ,alfap      ,alfau   ,precond
-     6         ,.false. ,fporomec,.false.    ,fhist_log  ,fprint 
-     7         ,0       ,0       ,0          ,0     ,neq
-     8         ,0       ,0       ,0          ,0     )
+     6         ,.false. ,fporomec,.false.    ,fhist_log  ,fprint)
       soltime = soltime + get_time()-timei
 c .....................................................................
 c
@@ -1433,9 +1431,7 @@ c ... solver ((M + alpha.dt.K).dv(n+1,i+1)= b )
      3    ,ia(i_m)    ,ia(i_b_tr) ,ia(i_x0_tr) ,solvtol  ,maxit
      4    ,ngram      ,block_pu   ,n_blocks_pu ,2        ,istep
      5    ,cmaxit     ,ctol       ,alfap       ,alfau    ,precond 
-     6    ,.false.    ,.false.    ,.false.     ,fhist_log,fprint
-     7    ,0          ,0          ,0           ,0         ,neq_tr 
-     8    ,0          ,0          ,0           ,0     )
+     6    ,.false.    ,.false.    ,.false.     ,fhist_log,fprint)
       soltime = soltime + get_time() - timei
 c .....................................................................
 c

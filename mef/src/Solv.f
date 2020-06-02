@@ -1,7 +1,7 @@
 c **********************************************************************
 c *                                                                    *
 c *   SOLV_PCM                                             06/12/2015  *
-c *                                                        20/05/2020  *
+c *                                                        01/06/2020  *
 c *   Metodos iterativos de solucao:                                   *
 c *                                                                    *
 c *   cg                                                               *
@@ -11,36 +11,24 @@ c *   iccg                                                             *
 c *   sqrm                                                             *
 c *   rsqmr                                                            *
 c *   lsqmr                                                            *
-c *   bicgstab                                                         *
-c *   pbicgstab                                                        * 
-c *   icbicgstab                                                       *                
-c *   bicgstabl2                                                       *
-c *   pbicgstabl2                                                      * 
-c *   gmres(m)                                                         *
 c *   gmres2(m)                                                        *
-c *   block_it_pcg                                                     *
 c **********************************************************************
       subroutine solv_pm(neq    ,nequ    ,neqp
-     1                  ,nad    ,naduu   ,nadpp
-     2                  ,ip     ,ja      ,ad         ,au     ,al 
-     3                  ,m      ,b       ,x          ,tol    ,maxit
-     4                  ,ngram  ,block_pu,n_blocks_up,solver ,istep
-     5                  ,cmaxit ,ctol    ,alfap      ,alfau  ,precond
-     6                  ,fmec   ,fporomec,fterm      ,fhist_solv ,fprint
-     7                  ,neqf1i ,neqf2i  ,neq3i      ,neq4i  ,neq_doti
-     8                  ,i_fmapi,i_xfi   ,i_rcvsi    ,i_dspli)
+     1                ,nad    ,naduu   ,nadpp
+     2                ,ip     ,ja      ,ad         ,au     ,al 
+     3                ,m      ,b       ,x          ,tol    ,maxit
+     4                ,ngram  ,block_pu,n_blocks_up,solver ,istep
+     5                ,cmaxit ,ctol    ,alfap      ,alfau  ,precond
+     6                ,fmec   ,fporomec,fterm      ,fhist_solv ,fprint)
       use Malloc
       implicit none
       include 'precond.fi'
       include 'openmp.fi'
       include 'time.fi'
-      integer neqf1i,neqf2i
 c ... ponteiros      
-      integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
       integer*8 i_a,i_b,i_c,i_d,i_g,i_h,i_y,i_z,i_r,i_s
 c ......................................................................
       integer*8 nad,ip(*)
-      integer neq3i,neq4i,neq_doti
       integer ja(*),neq,nequ,neqp,naduu,nadpp
       integer maxit,solver,ngram,istep,n_blocks_up
       real*8  ad(*),au(*),al(*),m(*),x(*),b(*),tol,energy
@@ -54,16 +42,8 @@ c ... precondicionador
       integer precond
       real*8  max_block_a(max_block*max_block)
 c ...................................................................... 
-      integer neqovlp
-      external dot,dot_par
-      external matvec_csrc_block_pm,matvec_csrc_sym_pm        
-c     OpenMP'ed subroutines
-      external dot_par_omp
-      external matvec_csrc_sym_pm_omp,matvec_csrc_pm_omp
-c ......................................................................
-c ... numero total de equacoes na particao overlapping:
-c    (neqovlp = neq, no sequencial e no non-overlapping)
-      neqovlp = neq+neq3i+neq4i
+c
+c ...
       if (omp_solv) then
 c ... matriz aramazenada em csrc blocado (Kuu,Kpp,Kpu)
          if(block_pu) then
@@ -93,15 +73,15 @@ c ... PCG
 c ...
         i_z = alloc_8('zsolver ',1,neq)
         i_r = alloc_8('rsolver ',1,neq)
-        i_s = alloc_8('psolver ',1,neqovlp)
+        i_s = alloc_8('psolver ',1,neq)
 c ......................................................................
 c
 c ... calculo do precondicionador
         call cal_precond(ip     ,ja    ,m
      1                  ,ad     ,al    ,ia(i_z)
      2                  ,precond,neq   ,nequ
-     3                  ,neqf1i ,neqf2i,i_fmapi
-     4                  ,i_xfi  ,i_rcvsi,i_dspli
+     3                  ,0      ,0     ,0      
+     4                  ,0      ,0     ,0      
      5                  ,.false.,0    )
 c .....................................................................
 c
@@ -120,8 +100,8 @@ c ... omp
      1                   ,ad       ,al     ,m      ,b       ,x   
      2                   ,ia(i_z)  ,ia(i_r),ia(i_s) 
      3                   ,tol      ,maxit  ,precond,iparam ,fhist_solv 
-     4                   ,0        ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     5                   ,i_xfi ,i_rcvsi   ,i_dspli,ia(i_threads_y)
+     4                   ,0        ,0      ,0     ,neq     ,0      
+     5                   ,0       ,0       ,0      ,ia(i_threads_y)
      6                   ,1       ,.false. ,.false.)  
 c .....................................................................
 c
@@ -131,8 +111,8 @@ c ... sequencial (cg, pcg e iccg)
      1                   ,ad      ,al     ,m      ,b       ,x   
      2                   ,ia(i_z) ,ia(i_r),ia(i_s) 
      3                   ,tol     ,maxit  ,precond,iparam ,fhist_solv 
-     4                   ,0       ,neqf1i ,neqf2i ,neq_doti,i_fmapi
-     5                   ,i_xfi   ,i_rcvsi,i_dspli
+     4                   ,0       ,0      ,0      ,neq     ,0      
+     5                   ,0       ,0      ,0      
      6                   ,1       ,.false.,.false.)  
 c .....................................................................
 c
@@ -164,7 +144,7 @@ c ...
 c ......................................................................
 c
 c ...
-         i_g = alloc_8('gsolver ',neqovlp,ngram+1)         
+         i_g = alloc_8('gsolver ',neq,ngram+1)         
          i_h = alloc_8('hsolver ',ngram+1,ngram)
          i_y = alloc_8('ysolver ',1,ngram)
          i_c = alloc_8('csolver ',1,ngram)
@@ -176,69 +156,37 @@ c ... calculo do precondicionador
         call cal_precond(ip     ,ja    ,m
      1                  ,ad     ,al    ,ia(i_g) 
      2                  ,precond,neq   ,nequ
-     3                  ,neqf1i ,neqf2i,i_fmapi
-     4                  ,i_xfi ,i_rcvsi,i_dspli
+     3                  ,0      ,0     ,0      
+     4                  ,0     ,0      ,0      
      5                  ,.false.,0)
 c .....................................................................
 c
-c ... matriz aramazena em csrc blocado (Kuu,Kpp,Kpu)
-         if(block_pu) then
-c ... omp
-           if(omp_solv) then
-             call gmres_omp(neq,nequ,nad,ip,ja 
-     1                 ,ad ,al  ,al ,m ,b ,x,ngram,ia(i_g) 
-     2                 ,ia(i_h),ia(i_y),ia(i_c),ia(i_s),ia(i_r) 
-     3                 ,tol    ,maxit   
-c ... matvec comum:
-     1                 ,matvec_csrc_pm_omp,dot_par_omp 
-     2                 ,neqovlp 
-     3                 ,0      ,neqf1i ,neqf2i ,neq_doti,i_fmapi
-     4                 ,i_xfi  ,i_rcvsi,i_dspli  
-     5                 ,ia(i_threads_y),.true.)
-c .....................................................................
-c
-c ... sequencial
-           else 
-             call call_gmres_block_pm(neq    ,nequ,neqovlp,nad  
-     1                     ,ip     ,ja     ,ad     ,al 
-     2                     ,m      ,b      ,x      ,ia(i_g)
-     3                     ,ia(i_h),ia(i_y),ia(i_c),ia(i_s),ia(i_r)  
-     4                     ,tol    ,maxit  ,precond,fhist_solv,ngram
-     5                     ,0      ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6                     ,i_xfi  ,i_rcvsi,i_dspli
-     7                     ,1      ,.false. ,.false.) 
-           endif
-c .....................................................................
-c
 c ... matriz aramazenada no csrc simetrico (Kuu,-Kpp,-Kpu)
-         else
 c ... omp
-           if(omp_solv) then
-             call call_gmres_omp(neq   ,neqovlp,nad  
+         if(omp_solv) then
+           call call_gmres_omp(neq   ,neq,nad  
      1                     ,ip     ,ja     ,ad     ,al 
      2                     ,m      ,b      ,x      ,ia(i_g)
      3                     ,ia(i_h),ia(i_y),ia(i_c),ia(i_s),ia(i_r)  
      4                     ,tol    ,maxit  ,precond,fhist_solv,fprint
      5                     ,ngram  
-     5                     ,0      ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6                     ,i_xfi  ,i_rcvsi,i_dspli,ia(i_threads_y)
+     5                     ,0      ,0      ,0     ,neq     ,0      
+     6                     ,0      ,0      ,0      ,ia(i_threads_y)
      7                     ,1      ,.false. ,.false.) 
 c .....................................................................
 c
 c ... (sequencial+mpi)
-           else 
-             call call_gmres(neq   ,neqovlp,nad  
+         else 
+           call call_gmres(neq   ,neq,nad  
      1                     ,ip     ,ja     ,ad     ,au     ,al 
      2                     ,m      ,b      ,x      ,ia(i_g)
      3                     ,ia(i_h),ia(i_y),ia(i_c),ia(i_s),ia(i_r)  
      4                     ,tol    ,maxit  ,precond,fhist_solv,fprint
      5                     ,ngram
-     6                     ,0      ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     7                     ,i_xfi  ,i_rcvsi,i_dspli
+     6                     ,0      ,0      ,0     ,neq     ,0      
+     7                     ,0      ,0      ,0      
      7                     ,1      ,.false. ,.false.) 
-           endif 
-c .....................................................................
-         endif
+         endif 
 c .....................................................................
 c
 c ......................................................................
@@ -252,273 +200,25 @@ c ......................................................................
 c
 c ...                                         
       elseif(solver .eq. 3) then
-        print*,'Solver GUASS nao disponivel para o poromecanico !!'
+        print*,"GAUSS: Not available !!"
 c ......................................................................
 c
 c ... BICGSTAB :
       else if (solver .eq. 4) then
 c ...
-        if(block_pu) then
-          if(n_blocks_up .eq. 1 ) then
-            print*,"BICGSTAB nao disponivel para a matriz",
-     .             " blocada [Kuu Kpp]."
-            stop   
-          else if( n_blocks_up .eq. 3 ) then
-            print*,"BICGSTAB nao disponivel para a matriz",
-     .           " blocada [Kuu] [Kpp] [Kpu]."
-            stop   
-          endif
-        endif
-c ......................................................................
-c
-c ... alocacao dos arronjos auxiliares (6neq)    
-        i_c = alloc_8('tsolver ',1,neq)
-        i_h = alloc_8('hsolver ',1,neq)
-        i_r = alloc_8('rsolver ',1,neq)
-        i_s = alloc_8('psolver ',1,neq)
-        i_z = alloc_8('zsolver ',1,neq)
-        i_y = alloc_8('ysolver ',1,neq)
-c .....................................................................
-c
-c ... calculo do precondicionador
-        call cal_precond(ip     ,ja    ,m
-     1                  ,ad     ,al    ,ia(i_z)
-     2                  ,precond,neq   ,nequ
-     3                  ,neqf1i ,neqf2i,i_fmapi
-     4                  ,i_xfi ,i_rcvsi,i_dspli
-     5                  ,.false.,0)
-c .....................................................................
-c
-c ... matriz aramazena em csrc blocado (Kuu,Kpp,Kpu)
-         if(block_pu) then
-c ... omp
-           if(omp_solv) then
-             call pbicgstab_omp(neq   ,nequ,nad    ,ip   ,ja      
-     1                     ,ad     ,al     ,al     ,m      ,b      ,x  
-     2                     ,ia(i_c),ia(i_h),ia(i_r),ia(i_s),ia(i_z)
-     3                     ,tol    ,maxit 
-c ... matvec comum:
-     1                     ,matvec_csrc_pm_omp,dot_par_omp 
-     2                     ,0      ,neqf1i  ,neqf2i  ,neq_doti   
-     3                     ,i_fmapi,i_xfi  ,i_rcvsi,i_dspli
-     4                     ,ia(i_threads_y),.true.)
-c .....................................................................
-c
-c ... sequencial
-           else 
-             call pbicgstab(neq   ,nequ   ,nad  ,ip     ,ja      
-     1                ,ad     ,al     ,al   ,m      ,b      ,x  
-     2                ,ia(i_c),ia(i_h),ia(i_r),ia(i_s),ia(i_z),ia(i_y)
-     3                ,tol    ,maxit 
-c ... matvec comum:
-     1                ,matvec_csrc_block_pm ,dot_par 
-     2                ,0        ,neqf1i     ,neqf2i ,neq_doti 
-     3                ,i_fmapi ,i_xfi       ,i_rcvsi,i_dspli
-     4                ,.true.  ,.true.      ,.true.)
-           endif 
-c .....................................................................
-c
-c ... matriz aramazenada no csrc simetrico (Kuu,-Kpp,-Kpu)
-         else
-c ... omp
-           if(omp_solv) then
-             call pbicgstab_omp(neq   ,nequ,nad    ,ip   ,ja      
-     1                     ,ad     ,al     ,al     ,m      ,b      ,x  
-     2                     ,ia(i_c),ia(i_h),ia(i_r),ia(i_s),ia(i_z)
-     3                     ,tol    ,maxit 
-c ... matvec comum:
-     1                     ,matvec_csrc_sym_pm_omp,dot_par_omp 
-     2                     ,0      ,neqf1i  ,neqf2i  ,neq_doti   
-     3                     ,i_fmapi,i_xfi  ,i_rcvsi,i_dspli
-     4                     ,ia(i_threads_y),.true.)
-c .....................................................................
-c
-c ... sequencial (bigstab, pbigstab e icbigstab)
-           else
-             call call_bicgstab(neq      ,nequ   ,nad    ,ip,ja
-     1                    ,ad       ,al  ,m      ,b      ,x ,ia(i_y)
-     2                    ,ia(i_c)  ,ia(i_h),ia(i_r),ia(i_s),ia(i_z)   
-     3                    ,tol      ,maxit  ,precond
-     4                    ,0        ,neqf1i ,neqf2i ,neq_doti,i_fmapi
-     5                    ,i_xfi    ,i_rcvsi,i_dspli) 
-           endif      
-c .....................................................................
-         endif
-c .....................................................................
-c
-c ... 
-        i_y = dealloc('ysolver ')   
-        i_z = dealloc('zsolver ')     
-        i_s = dealloc('psolver ')
-        i_r = dealloc('rsolver ')
-        i_h = dealloc('hsolver ')
-        i_c = dealloc('tsolver ')
-c ......................................................................         
+        print*,"BICGSTAB: Not available !!"
+c ......................................................................  
 c
 c ... PCG_BLOCK_IT                                                                   
       else if (solver .eq. 5) then
 c ...
-         if(omp_solv) then 
-           print*,"PCG_BOLCK_IT: Openmp not available !!"
-         endif 
-c .....................................................................
-c
-c ...
-c        diag = .true.
-c ...    precondicionador diagonal:
-c        if(diag) then 
-           precondtime = get_time() - precondtime    
-           call pre_diag(m        ,ad        ,nequ,.false.)
-           call pre_diag(m(nequ+1),ad(nequ+1),neqp,.false.)
-           precondtime = get_time() - precondtime   
-c ...    
-c        else                           
-c          m(1:neq) = 1.d0  
-c        endif           
-c ......................................................................
-c
-c ... BLOCK_IT_PCG :
-         if(block_pu) then
-            if(n_blocks_up .eq. 1 ) then
-              print*,"PCG_BLOCK indisponivel para a matriz",
-     .               " blocada [Kuu Kpp]."
-              stop   
-            else if( n_blocks_up .eq. 2 ) then
-              print*,"PCG_BLOCK indisponivel para a matriz",
-     .               " blocada [Kuu Kpp] [Kpu]."
-              stop   
-            endif
-c ......................................................................
-c
-c ...
-           i_z  = alloc_8('zsolver ',1,nequ)
-           i_r  = alloc_8('rsolver ',1,nequ)
-           i_s  = alloc_8('ssolver ',1,nequ)
-           i_d  = alloc_8('dsolver ',1,nequ)
-           i_c  = alloc_8('csolver ',1,neqp)
-           i_h  = alloc_8('hsolver ',1,nequ)
-           i_g  = alloc_8('gsolver ',1,neqp)
-           i_y  = alloc_8('ysolver ',1,nequ)
-           i_a  = alloc_8('asolver ',1,neqp)
-c ......................................................................
-c
-c ...
-           call pcg_block_it(neq     ,nequ       ,neqp  
-     1                    ,nad       ,naduu     ,nadpp
-     2                    ,ip        ,ja     
-     3                    ,ip(nequ+2),ja(naduu+1)
-     4                    ,ip(neq+3) ,ja(naduu+nadpp+1)         
-     5                    ,ad        ,ad(nequ+1)
-     6                    ,al        ,al(naduu+1),al(naduu+nadpp+1)  
-     7                    ,m         ,m(nequ+1)  ,b               ,x
-     8                    ,ia(i_z)   ,ia(i_r),ia(i_s) 
-     9                    ,ia(i_d)   ,ia(i_c),ia(i_h),ia(i_g)
-     1                    ,ia(i_y)   ,ia(i_a)
-     2                    ,tol       ,ctol   ,maxit    ,cmaxit
-     3                    ,alfap     ,alfau 
-     4                    ,.true.    ,istep
-     5                    ,0         ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6                    ,i_xfi     ,i_rcvsi,i_dspli) 
-c ......................................................................
-c
-c ... 
-         else 
-           print*,"PCG_BLOCK indisponivel para a matriz nao blocada"
-           stop   
-         endif 
-c ......................................................................
-c
-c ...
-         i_a  = dealloc('asolver ')        
-         i_y  = dealloc('ysolver ')        
-         i_g  = dealloc('gsolver ')        
-         i_h  = dealloc('hsolver ')        
-         i_c  = dealloc('csolver ') 
-         i_d  = dealloc('dsolver ')       
-         i_s  = dealloc('ssolver ')         
-         i_r  = dealloc('rsolver ')        
-         i_z  = dealloc('zsolver ') 
+        print*,"PCG_BLOCK_ITBICGSTAB(2): Not available !!"
 c ......................................................................
 c
 c ... BICGSTAB(2):
       else if(solver .eq. 6 ) then
 c ...
-        if(omp_solv) then 
-          print*,"BICGSTAB(2): Openmp not available !!"
-        endif 
-c .....................................................................
-c
-c ...
-        if(block_pu) then
-          if(n_blocks_up .eq. 1 ) then
-            print*,"BICGSTAB(2) nao disponivel para a matriz",
-     .             " blocada [Kuu Kpp]."
-            stop   
-          else if( n_blocks_up .eq. 3 ) then
-            print*,"BICGSTAB(2) nao disponivel para a matriz",
-     .           " blocada [Kuu] [Kpp] [Kpu]."
-            stop   
-          endif
-        endif
-c ......................................................................
-c
-c ... alocacao dos arronjos auxiliares (8neq)    
-        i_c = alloc_8('tsolver ',1,neq)
-        i_h = alloc_8('hsolver ',1,neq)
-        i_r = alloc_8('rsolver ',1,neq)
-        i_s = alloc_8('psolver ',1,neq)
-        i_z = alloc_8('zsolver ',1,neq)
-        i_y = alloc_8('ysolver ',1,neq)
-        i_a = alloc_8('asolver ',1,neq)
-        i_d = alloc_8('dsolver ',1,neq)
-        i_g = alloc_8('gsolver ',1,neqovlp)
-        i_b = alloc_8('bsolver ',1,neqovlp)
-c ....................................................................
-c
-c ... calculo do precondicionador
-        call cal_precond(ip     ,ja    ,m
-     1                  ,ad     ,al    ,ia(i_z)
-     2                  ,precond,neq   ,nequ
-     3                  ,neqf1i ,neqf2i,i_fmapi
-     4                  ,i_xfi ,i_rcvsi,i_dspli
-     5                  ,.false.,0)
-c .....................................................................
-c
-c ... matriz aramazena em csrc blocado (Kuu,Kpp,Kpu)
-        if(block_pu) then
-           call call_bicgstabl2_v2(neq   ,nequ   ,nad,ip ,ja 
-     1          ,ad      ,al     ,m      ,b      ,x   
-     2          ,ia(i_c) ,ia(i_h),ia(i_r),ia(i_s),ia(i_z)
-     3          ,ia(i_y) ,ia(i_a),ia(i_d),ia(i_b),ia(i_g)
-     4          ,tol     ,maxit  ,precond
-     5          ,0     ,neqf1i   ,neqf2i,neq_doti,i_fmapi
-     6          ,i_xfi ,i_rcvsi  ,i_dspli)
-c .....................................................................
-c
-c ... matriz aramazenada no csrc simetrico (Kuu,-Kpp,-Kpu)
-        else
-           call call_bicgstabl2(neq       ,nequ   ,nad  ,ip     ,ja
-     1                  ,ad       ,al     ,m      ,b    ,x    
-     2                  ,ia(i_c) ,ia(i_h) ,ia(i_r),ia(i_s),ia(i_z)
-     3                  ,ia(i_y) ,ia(i_a) ,ia(i_d),ia(i_b),ia(i_g)
-     4                  ,tol      ,maxit  ,precond
-     5                  ,0        ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6                  ,i_xfi    ,i_rcvsi,i_dspli
-     7                  ,1        ,.false.,.false.)
-        endif
-c ......................................................................
-c
-c ... 
-        i_b = dealloc('bsolver ')
-        i_g = dealloc('gsolver ')
-        i_d = dealloc('dsolver ')
-        i_a = dealloc('asolver ')
-        i_y = dealloc('ysolver ')   
-        i_z = dealloc('zsolver ')     
-        i_s = dealloc('psolver ')
-        i_r = dealloc('rsolver ')
-        i_h = dealloc('hsolver ')
-        i_c = dealloc('tsolver ')
+        print*,"BICGSTAB(2): Not available !!"
 c ...................................................................... 
 c
 c ... MINRES:
@@ -565,7 +265,7 @@ c
 c ...
         i_z = alloc_8('zsolver ',1,neq)
         i_h = alloc_8('hsolver ',1,neq)
-        i_r = alloc_8('rsolver ',1,neqovlp)
+        i_r = alloc_8('rsolver ',1,neq)
         i_s = alloc_8('psolver ',1,neq)
 c .....................................................................
 c
@@ -573,8 +273,8 @@ c ... calculo do precondicionador
         call cal_precond(ip     ,ja    ,m
      1                  ,ad     ,al    ,ia(i_z)
      2                  ,precond,neq   ,nequ
-     3                  ,neqf1i ,neqf2i,i_fmapi
-     4                  ,i_xfi ,i_rcvsi,i_dspli
+     3                  ,0      ,0     ,0      
+     4                  ,0     ,0      ,0      
      5                  ,.false.,0)
 c .....................................................................
 c
@@ -585,8 +285,8 @@ c ...
      2                    ,ia(i_z),ia(i_h),ia(i_r) ,ia(i_s)     
      3                    ,tol    ,maxit ,precond,iparam ,fhist_solv
      4                    ,fprint
-     5                    ,0      ,neqf1i,neqf2i ,neq_doti,i_fmapi
-     6                    ,i_xfi  ,i_rcvsi,i_dspli,ia(i_threads_y)
+     5                    ,0      ,0     ,0      ,neq     ,0      
+     6                    ,0      ,0     ,0      ,ia(i_threads_y)
      7                    ,1      ,.false.,.false.,fsqmr) 
 c .....................................................................
 c
@@ -597,8 +297,8 @@ c ...
      2                ,ia(i_z),ia(i_h),ia(i_r)  ,ia(i_s) 
      3                ,tol      ,maxit ,precond ,iparam  ,fhist_solv
      4                ,fprint
-     5                ,0        ,neqf1i,neqf2i  ,neq_doti,i_fmapi
-     6                ,i_xfi    ,i_rcvsi,i_dspli
+     5                ,0        ,0     ,0       ,neq     ,0      
+     6                ,0        ,0     ,0      
      7                ,1        ,.false.,.false.,fsqmr) 
        endif
 c .....................................................................
@@ -1242,430 +942,6 @@ c .....................................................................
 c **********************************************************************
 c
 c **********************************************************************
-c * Data de criacao    : 14/04/2016                                    *
-c * Data de modificaco : 23/05/2016                                    * 
-c * ------------------------------------------------------------------ *   
-c * CALL_BICGSTABCG : chama a versao do Bbicgstab desejada             *    
-c * ------------------------------------------------------------------ * 
-c * Parametros de entrada:                                             *
-c * ------------------------------------------------------------------ * 
-c * neq      - numero de equacoes                                      *
-c * nequ     - numero de equacoes no bloco Kuu                         *
-c * nad      - numero de termos nao nulos no bloco Kuu e Kpu  ou K     *
-c * ia(*)    - ponteiro do formato CSR                                 *
-c * ja(*)    - ponteiro das colunas no formato CSR                     *
-c * ad(neq)  - diagonal da matriz A                                    *
-c * al(*)    - parte triangular inferior de A                          *
-c * b(neq)   - vetor de forcas                                         *
-c * m(*)     - precondicionador                                        *
-c * x(neq)   - chute inicial                                           *
-c * c(neq)   - arranjo local de trabalho                               *
-c * h(neq)   - arranjo local de trabalho                               *
-c * r(neq)   - arranjo local de trabalho                               *
-c * s(neq)   - arranjo local de trabalho                               *
-c * z(neq)   - arranjo local de trabalho                               *
-c * y(neq)   - arranjo local de trabalho                               *
-c * tol      - tolerancia de convergencia                              *
-c * maxit    - numero maximo de iteracoes                              *
-c * precond  - precondicionador                                        *
-c *            1 - nenhum                                              *
-c *            2 - diag                                                *
-c *            3 - iLDLt                                               *
-c *            4 -                                                     *
-c *            5 - modulo da diagonal                                  *
-c * my_id    -                                                         *
-c * neqf1i   -                                                         *
-c * neqf2i   -                                                         *
-c * neq_doti -                                                         *
-c * i_fmap   -                                                         *
-c * i_xfi    -                                                         *
-c * i_rvcs   -                                                         *
-c * i_dspli  -                                                         *
-c * fprint   - saida na tela                                           *
-c * flog     - log do arquivo de saida                                 *
-c * ------------------------------------------------------------------ * 
-c * Parametros de saida:                                               *
-c * ------------------------------------------------------------------ *
-c * x(neq) - vetor solucao                                             *
-c * b(neq) - modificado                                                *
-c * ad(*),al(*),au(*) - inalterados                                    *
-c * ------------------------------------------------------------------ * 
-c * OBS:                                                               *
-c * ------------------------------------------------------------------ *
-c **********************************************************************  
-      subroutine call_bicgstab(neq      ,nequ  ,nad   ,ia      ,ja
-     1                        ,ad       ,al    ,m     ,b       ,x    
-     2                        ,c        ,h     ,r     ,s       ,z  ,y   
-     3                        ,tol      ,maxit ,precond
-     4                        ,my_id    ,neqf1i,neqf2i,neq_doti,i_fmapi
-     5                        ,i_xfi    ,i_rcvsi,i_dspli)
-      implicit none
-      include 'time.fi'
-c ... mpi
-      integer my_id
-      integer neqf1i,neqf2i
-c ... ponteiros      
-      integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
-c .....................................................................
-      integer neq,nequ,nad,neq_doti 
-      integer ia(*),ja(*)
-      real*8  ad(*),al(*),x(*),b(*)
-c ... arranjos auxiliares
-      real*8 z(*),r(*),s(*),c(*),h(*),y(*)
-c ...
-      real*8  tol
-      integer maxit  
-c ... precondicionador
-      logical diag
-      integer precond
-      real*8  m(*)
-c ...
-      external dot_par
-      external matvec_csrc_sym_pm        
-c ......................................................................
-
-c ... bicgstab
-      if(precond .eq. 1) then
-c ...  
-        call bicgstab(neq   ,nequ   ,nad    ,ia   ,ja      
-     1                ,ad    ,al     ,al    ,b    ,x  
-     2                ,c     ,h      ,r     ,s    ,z
-     3                ,tol   ,maxit 
-c ... matvec comum:
-     4                ,matvec_csrc_sym_pm,dot_par 
-     5                ,my_id        ,neqf1i  ,neqf2i  ,neq_doti   
-     6                ,i_fmapi      ,i_xfi  ,i_rcvsi,i_dspli
-     7                ,.true.       ,.true. ,.true.)
-c .....................................................................
-c
-c ... pbicgstab - bicgstab com precondicionador diagonal
-      else if(precond .eq. 2 .or. precond .eq. 5) then
-c ...  
-        call pbicgstab(neq   ,nequ   ,nad    ,ia   ,ja      
-     1                ,ad    ,al     ,al     ,m    ,b      ,x  
-     2                ,c     ,h      ,r      ,s    ,z      ,y
-     3                ,tol   ,maxit 
-c ... matvec comum:
-     4                ,matvec_csrc_sym_pm,dot_par 
-     5                ,my_id        ,neqf1i  ,neqf2i  ,neq_doti   
-     6                ,i_fmapi      ,i_xfi  ,i_rcvsi,i_dspli
-     7                ,.true.       ,.true. ,.true.)
-c .....................................................................
-c
-c ...  icbicgstab - bicgstab com precondicionador LDLT(0) imcompleto
-      elseif(precond .eq. 3 ) then
-        call icbicgstab(neq      ,nequ  ,nad   ,ia      ,ja
-     1          ,ad       ,al    ,al    ,m     ,b       ,x    
-     2          ,c        ,h     ,r     ,s     ,z       ,y
-     3          ,tol      ,maxit
-c ... matvec comum:
-     4          ,matvec_csrc_sym_pm,dot_par 
-     5          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6          ,i_xfi ,i_rcvsi,i_dspli
-     7          ,.true.,.true. ,.true.)
-c .....................................................................
-c
-c ...
-      elseif(precond .eq. 4 ) then
-        print*,'iLLt Not implemented for bicgstab!!!'
-        stop
-      endif  
-c .....................................................................
-      return
-      end    
-c **********************************************************************
-c
-c **********************************************************************
-c * Data de criacao    : 14/04/2016                                    *
-c * Data de modificaco : 11/11/2016                                    * 
-c * ------------------------------------------------------------------ *   
-c * CALL_BICGSTABCGL2 : chama a versao do bicgstabl2 desejada          *    
-c * ------------------------------------------------------------------ * 
-c * Parametros de entrada:                                             *
-c * ------------------------------------------------------------------ * 
-c * neq      - numero de equacoes                                      *
-c * nequ     - numero de equacoes no bloco Kuu                         *
-c * nad      - numero de termos nao nulos no bloco Kuu e Kpu  ou K     *
-c * ia(*)    - ponteiro do formato CSR                                 *
-c * ja(*)    - ponteiro das colunas no formato CSR                     *
-c * ad(neq)  - diagonal da matriz A                                    *
-c * al(*)    - parte triangular inferior de A                          *
-c * b(neq)   - vetor de forcas                                         *
-c * m(*)     - precondicionador                                        *
-c * x(neq)   - chute inicial                                           *
-c * c(neq)   - arranjo local de trabalho                               *
-c * h(neq)   - arranjo local de trabalho                               *
-c * r(neq)   - arranjo local de trabalho                               *
-c * s(neq)   - arranjo local de trabalho                               *
-c * z(neq)   - arranjo local de trabalho                               *
-c * y(neq)   - arranjo local de trabalho                               *
-c * a(neq)   - arranjo local de trabalho                               *
-c * d(neq)   - arranjo local de trabalho                               *
-c * e(neq)   - arranjo local de trabalho                               *
-c * g(neq)   - arranjo local de trabalho                               *
-c * tol      - tolerancia de convergencia                              *
-c * maxit    - numero maximo de iteracoes                              *
-c * precond  - precondicionador                                        *
-c *            1 - nenhum                                              *
-c *            2 - diag                                                *
-c *            3 - iLDLt                                               *
-c *            4 -                                                     *
-c *            5 - modulo da diagonal                                  *
-c * my_id    -                                                         *
-c * neqf1i   -                                                         *
-c * neqf2i   -                                                         *
-c * neq_doti -                                                         *
-c * i_fmap   -                                                         *
-c * i_xfi    -                                                         *
-c * i_rvcs   -                                                         *
-c * i_dspli  -                                                         *
-c * fprint   - saida na tela                                           *
-c * flog     - log do arquivo de saida                                 *
-c * mpi      - true|false                                              *
-c * ovlp     - overllaping                                             *
-c * nprcs    - numero de processos mpi                                 *
-c * ------------------------------------------------------------------ * 
-c * Parametros de saida:                                               *
-c * ------------------------------------------------------------------ *
-c * x(neq) - vetor solucao                                             *
-c * b(neq) - modificado                                                *
-c * ad(*),al(*),au(*) - inalterados                                    *
-c * ------------------------------------------------------------------ * 
-c * OBS:                                                               *
-c * ------------------------------------------------------------------ *
-c **********************************************************************  
-      subroutine call_bicgstabl2(neq    ,nequ   ,nad  ,ia        ,ja
-     1                        ,ad       ,al     ,m      ,b       ,x    
-     2                        ,c        ,h      ,r      ,s       ,z     
-     3                        ,y        ,a      ,d      ,e       ,g 
-     4                        ,tol      ,maxit  ,precond
-     5                        ,my_id    ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6                        ,i_xfi    ,i_rcvsi,i_dspli
-     7                        ,nprcs    ,ovlp   ,mpi) 
-      implicit none
-      include 'time.fi'
-c ... mpi
-      integer my_id
-      integer neqf1i,neqf2i,nprcs
-c ... ponteiros      
-      integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
-      logical ovlp,mpi
-c .....................................................................
-c .....................................................................
-      integer neq,nequ,nad,neq_doti 
-      integer ia(*),ja(*)
-      real*8  ad(*),al(*),x(*),b(*)
-c ... arranjos auxiliares
-      real*8 z(*),r(*),s(*),c(*),h(*),y(*),a(*),d(*),g(*),e(*)
-c ...
-      real*8  tol
-      integer maxit  
-c ... precondicionador
-      logical diag
-      integer precond
-      real*8  m(*)
-c ...
-      external dot_par
-      external matvec_csrc_sym_pm,matvec_csrcr_sym_pm        
-c ......................................................................
-
-c ... bicgstabl2
-      if(precond .eq. 1) then
-c ...  
-        call bicgstabl2(neq     ,nequ   ,nad,ia ,ja 
-     1          ,ad      ,al     ,al     ,b  ,x   
-     2          ,c       ,h      ,r      ,s  ,z
-     3          ,y       ,a 
-     4          ,tol     ,maxit  
-c ... matvec comum:
-     5          ,matvec_csrc_sym_pm,dot_par 
-     6          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     7          ,i_xfi ,i_rcvsi,i_dspli
-     8          ,.true.,.true. ,.true.)
-c .....................................................................
-c
-c ... pbicgstabl2 - bicgstabl2 com precondicionador diagonal
-      else if(precond .eq. 2 .or. precond .eq. 5 ) then
-c ... overllaping
-         if(ovlp) then
-           call pbicgstabl2(neq     ,nequ   ,nad,ia ,ja 
-     1          ,ad      ,al     ,al ,m  ,b  ,x   
-     2          ,c       ,h      ,r      ,s      ,z      
-     3          ,y       ,a      ,d      ,e      ,g      
-     4          ,tol     ,maxit  
-c ... matvec comum:
-     5          ,matvec_csrcr_sym_pm,dot_par 
-     6          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     7          ,i_xfi ,i_rcvsi,i_dspli
-     8          ,.true.,.true. ,.true.
-     9          ,nprcs ,mpi)
-c .....................................................................
-c
-c ...non-overllaping
-         else 
-           call pbicgstabl2(neq     ,nequ   ,nad,ia ,ja 
-     1          ,ad      ,al     ,al ,m  ,b  ,x   
-     2          ,c       ,h      ,r      ,s      ,z      
-     3          ,y       ,a      ,d      ,e      ,g      
-     4          ,tol     ,maxit  
-c ... matvec comum:
-     5          ,matvec_csrc_sym_pm,dot_par 
-     6          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     7          ,i_xfi ,i_rcvsi,i_dspli
-     8          ,.true.,.true. ,.true.
-     9          ,nprcs ,mpi)
-         endif
-c .....................................................................
-c
-c ...
-      elseif(precond .eq. 3 ) then
-        print*,'iLDLt not implemented for bicgstab(2)!!!'
-        stop
-c ...
-      elseif(precond .eq. 4 ) then
-        print*,'iLLt not implemented for bicgstab(2)!!!'
-        stop
-      endif  
-c .....................................................................
-      return
-      end    
-c *********************************************************************
-c
-c **********************************************************************
-c * Data de criacao    : 15/11/2016                                    *
-c * Data de modificaco : 00/00/0000                                    * 
-c * ------------------------------------------------------------------ *   
-c * CALL_BICGSTABCGL2_V2 : chama a versao do bicgstabl2 com bloco pu   * 
-c * desejada                                                           *    
-c * ------------------------------------------------------------------ * 
-c * Parametros de entrada:                                             *
-c * ------------------------------------------------------------------ * 
-c * neq      - numero de equacoes                                      *
-c * nequ     - numero de equacoes no bloco Kuu                         *
-c * nad      - numero de termos nao nulos no bloco Kuu e Kpu  ou K     *
-c * ia(*)    - ponteiro do formato CSR                                 *
-c * ja(*)    - ponteiro das colunas no formato CSR                     *
-c * ad(neq)  - diagonal da matriz A                                    *
-c * al(*)    - parte triangular inferior de A                          *
-c * b(neq)   - vetor de forcas                                         *
-c * m(*)     - precondicionador                                        *
-c * x(neq)   - chute inicial                                           *
-c * c(neq)   - arranjo local de trabalho                               *
-c * h(neq)   - arranjo local de trabalho                               *
-c * r(neq)   - arranjo local de trabalho                               *
-c * s(neq)   - arranjo local de trabalho                               *
-c * z(neq)   - arranjo local de trabalho                               *
-c * y(neq)   - arranjo local de trabalho                               *
-c * a(neq)   - arranjo local de trabalho                               *
-c * d(neq)   - arranjo local de trabalho                               *
-c * e(neq)   - arranjo local de trabalho                               *
-c * g(neq)   - arranjo local de trabalho                               *
-c * tol      - tolerancia de convergencia                              *
-c * maxit    - numero maximo de iteracoes                              *
-c * precond  - precondicionador                                        *
-c *            1 - nenhum                                              *
-c *            2 - diag                                                *
-c *            3 - iLDLt                                               *
-c *            4 -                                                     *
-c *            5 - modulo da diagonal                                  *
-c * my_id    -                                                         *
-c * neqf1i   -                                                         *
-c * neqf2i   -                                                         *
-c * neq_doti -                                                         *
-c * i_fmap   -                                                         *
-c * i_xfi    -                                                         *
-c * i_rvcs   -                                                         *
-c * i_dspli  -                                                         *
-c * fprint   - saida na tela                                           *
-c * flog     - log do arquivo de saida                                 *
-c * ------------------------------------------------------------------ * 
-c * Parametros de saida:                                               *
-c * ------------------------------------------------------------------ *
-c * x(neq) - vetor solucao                                             *
-c * b(neq) - modificado                                                *
-c * ad(*),al(*),au(*) - inalterados                                    *
-c * ------------------------------------------------------------------ * 
-c * OBS:                                                               *
-c * ------------------------------------------------------------------ *
-c * Arranjos jat,iat e kat sao utilizados na retrosubstituicao do      *
-c * solver iLDLt                                                       *
-c **********************************************************************  
-      subroutine call_bicgstabl2_v2(neq    ,nequ  ,nad  ,ia        ,ja
-     1                        ,ad       ,al    ,m      ,b       ,x    
-     2                        ,c        ,h     ,r      ,s       ,z     
-     3                        ,y        ,a     ,d      ,e       ,g 
-     4                        ,tol      ,maxit ,precond
-     5                        ,my_id    ,neqf1i,neqf2i,neq_doti,i_fmapi
-     6                        ,i_xfi    ,i_rcvsi,i_dspli)
-      implicit none
-      include 'time.fi'
-c ... mpi
-      integer my_id
-      integer neqf1i,neqf2i
-c ... ponteiros      
-      integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
-c .....................................................................
-      integer neq,nequ,nad,neq_doti 
-      integer ia(*),ja(*)
-      real*8  ad(*),al(*),x(*),b(*)
-c ... arranjos auxiliares
-      real*8 z(*),r(*),s(*),c(*),h(*),y(*),a(*),d(*),g(*),e(*)
-c ...
-      real*8  tol
-      integer maxit  
-c ... precondicionador
-      logical diag
-      integer precond
-      real*8  m(*)
-c ...
-      external dot_par
-      external matvec_csrc_block_pm        
-c ......................................................................
-
-c ... bicgstabl2
-      if(precond .eq. 1) then
-c ...  
-        call bicgstabl2(neq     ,nequ   ,nad,ia ,ja 
-     1          ,ad      ,al     ,al     ,b  ,x   
-     2          ,c       ,h      ,r      ,s  ,z
-     3          ,y       ,a 
-     4          ,tol     ,maxit  
-c ... matvec comum:
-     6          ,matvec_csrc_block_pm,dot_par 
-     7          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     8          ,i_xfi ,i_rcvsi,i_dspli
-     9          ,.true.,.true. ,.true.)
-c .....................................................................
-c
-c ... pbicgstabl2 - bicgstabl2 com precondicionador diagonal
-      else if(precond .eq. 2 .or. precond .eq. 5 ) then
-         call pbicgstabl2(neq     ,nequ   ,nad,ia ,ja 
-     1          ,ad      ,al     ,al ,m  ,b  ,x   
-     2          ,c       ,h      ,r      ,s      ,z      
-     3          ,y       ,a      ,d      ,e      ,g      
-     4          ,tol     ,maxit  
-c ... matvec comum:
-     5          ,matvec_csrc_block_pm,dot_par 
-     6          ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     7          ,i_xfi ,i_rcvsi,i_dspli
-     8          ,.true.,.true. ,.true.)
-c .....................................................................
-c
-c ...
-      elseif(precond .eq. 3 ) then
-        print*,'iLDLt not implemented for bicgstab(2)!!!'
-        stop
-c ...
-      elseif(precond .eq. 4 ) then
-        print*,'iLLt not implemented for bicgstab(2)!!!'
-        stop
-      endif  
-c .....................................................................
-      return
-      end    
-c *********************************************************************
-c
-c **********************************************************************
 c * Data de criacao    : 28/11/2016                                    *
 c * Data de modificaco : 29/01/2017                                    * 
 c * ------------------------------------------------------------------ *   
@@ -1944,146 +1220,6 @@ c ... matvec comum:
      8                ,fprint ,.true. ,fhist_log,.true.
      8                ,nprcs  , mpi) 
          endif
-c .....................................................................
-c
-c ...
-      elseif(precond .eq. 3 ) then
-        print*,'iLDLt not implemented for GMRES!!!'
-        stop
-c ...
-      elseif(precond .eq. 4 ) then
-        print*,'iLLt not implemented for GMRES!!!'
-        stop
-      endif  
-c .....................................................................
-      return
-      end    
-c *********************************************************************
-c
-c **********************************************************************
-c * Data de criacao    : 28/11/2016                                    *
-c * Data de modificaco : 00/00/0000                                    * 
-c * ------------------------------------------------------------------ *   
-c * call_gmres_block_pm :chama a versao do GMRES desejada              *    
-c * ------------------------------------------------------------------ * 
-c * Parametros de entrada:                                             *
-c * ------------------------------------------------------------------ * 
-c * neq      - numero de equacoes                                      *
-c * neqovlp  - numero de eqquacoes em overlapping                      *
-c * nad      - numero de termos nao nulos no bloco Kuu e Kpu  ou K     *
-c * ia(*)    - ponteiro do formato CSR                                 *
-c * ja(*)    - ponteiro das colunas no formato CSR                     *
-c * ad(neq)  - diagonal da matriz A                                    *
-c * al(*)    - parte triangular inferior de A                          *
-c * m(*)     - precondicionador                                        *
-c * b(*)     - vetor de forcas                                         *
-c * x(*)     - chute inicial                                           *
-c * g(*)     - arranjo local de trabalho                               *
-c * h(*)     - arranjo local de trabalho                               *
-c * y(*)     - arranjo local de trabalho                               *
-c * v(*)     - arranjo local de trabalho                               *
-c * s(*)     - arranjo local de trabalho                               *
-c * r(*)     - arranjo local de trabalho                               *
-c * tol      - tolerancia de convergencia                              *
-c * maxit    - numero maximo de iteracoes                              *
-c * precond  - precondicionador                                        *
-c *            1 - nenhum                                              *
-c *            2 - diag                                                *
-c *            3 - iLDLt                                               *
-c *            4 -                                                     *
-c *            5 - modulo da diagonal                                  *
-c * my_id    -                                                         *
-c * neqf1i   -                                                         *
-c * neqf2i   -                                                         *
-c * neq_doti -                                                         *
-c * i_fmap   -                                                         *
-c * i_xfi    -                                                         *
-c * i_rvcs   -                                                         *
-c * i_dspli  -                                                         *
-c * fprint   - saida na tela                                           *
-c * flog     - log do arquivo de saida                                 *
-c * mpi      - true|false                                              *
-c * ovlp     - overllaping                                             *
-c * nprcs    - numero de processos mpi                                 *
-c * ------------------------------------------------------------------ * 
-c * Parametros de saida:                                               *
-c * ------------------------------------------------------------------ *
-c * x(neq) - vetor solucao                                             *
-c * b(neq) - modificado                                                *
-c * ad(*),al(*) - inalterados                                          *
-c * ------------------------------------------------------------------ * 
-c * OBS:                                                               *
-c * ------------------------------------------------------------------ *
-c **********************************************************************  
-      subroutine call_gmres_block_pm(neq    ,nequ,neqovlp,nad  
-     1                     ,ia     ,ja     ,ad     ,al 
-     2                     ,m      ,b      ,x      ,g
-     3                     ,h      ,y      ,c      ,s      ,r     
-     4                     ,tol    ,maxit  ,precond,nkrylov
-     5                     ,my_id  ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6                     ,i_xfi  ,i_rcvsi,i_dspli
-     7                     ,nprcs  ,ovlp   ,mpi) 
-      implicit none
-      include 'time.fi'
-c ... mpi
-      integer my_id
-      integer neqf1i,neqf2i,nprcs
-c ... ponteiros      
-      integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
-      logical ovlp,mpi
-c .....................................................................
-      integer neq,nequ,neqovlp,nad,neq_doti,nkrylov 
-      integer ia(*),ja(*)
-      real*8  ad(*),al(*),x(*),b(*)
-c ... arranjos auxiliares
-      real*8 g(*),h(*),y(*),c(*),r(*),s(*)
-c ...
-      real*8  tol
-      integer maxit  
-c ... precondicionador
-      integer precond
-      real*8  m(*)
-c ...
-      external dot_par
-      external matvec_csrc_block_pm        
-c ......................................................................
-c
-c ... gmres sem precondicionador
-      if(precond .eq. 1) then
-        print*,'Not implemented GMRES algorithm without',
-     .        ' preconditioner !!!'
-        call stop_mef()
-c ......................................................................
-c
-c ... pbicgstabl2 - bicgstabl2 com precondicionador diagonal
-      else if(precond .eq. 2 .or. precond .eq. 5 ) then
-c ... overllaping
-c        if(ovlp) then
-c          call gmres2(neq,neq,nad,ia,ja 
-c    1                ,ad ,al ,al ,m ,b ,x,nkrylov
-c    2                ,g  ,h  ,y  ,c ,s ,r       
-c    3                ,tol    ,maxit   
-c ... matvec comum:
-c    4                ,matvec_csrcr_sym_pm,dot_par 
-c    5                ,neqovlp
-c    6                ,my_id  ,neqf1i ,neqf2i ,neq_doti,i_fmapi
-c    7                ,i_xfi  ,i_rcvsi,i_dspli 
-c    8                ,.true.) 
-c .....................................................................
-c
-c ...non-overllaping
-c        else 
-           call gmres2(neq,neq,nad,ia,ja 
-     1                ,ad ,al ,al ,m ,b ,x,nkrylov
-     2                ,g  ,h  ,y  ,c ,s ,r       
-     3                ,tol    ,maxit   
-c ... matvec comum:
-     4                ,matvec_csrc_block_pm,dot_par 
-     5                ,neqovlp
-     6                ,my_id  ,neqf1i ,neqf2i ,neq_doti,i_fmapi
-     7                ,i_xfi  ,i_rcvsi,i_dspli 
-     8                ,.true.) 
-c        endif
 c .....................................................................
 c
 c ...
