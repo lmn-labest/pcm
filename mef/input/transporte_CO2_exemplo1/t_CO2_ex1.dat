@@ -1,0 +1,29 @@
+solver   config/solo1.solver
+config   config/solo1.config
+gravity  config/grav.dat
+setprint config/setprint.dat
+conseq   mat/matprop.dat 
+edp      config/edp.dat
+mesh
+nnode 11 numel 10 numat 1 maxno 3 dim 1
+fmaterials
+1 mat/prop1.dat
+end fmaterials
+insert mesh/CO2_mesh0_coor.dat
+insert mesh/CO2_mesh0_elem.dat
+insert mesh/CO2_mesh0_initial.dat
+loads
+1 1 1.0
+2 1 0.0
+end loads
+constrainco2
+1   1 
+11  1 
+end constrainco2
+nodalloadsco2
+1 1
+11 2  
+end nodalloadsco2
+end mesh
+run run/run.dat
+stop

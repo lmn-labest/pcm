@@ -1,0 +1,11 @@
+#elplastic
+#desloc 
+#pressure
+#totalstress
+#biotstress
+#terzaghistress
+darcyflux
+cCO2
+#pconsolidation
+#porosity
+end
