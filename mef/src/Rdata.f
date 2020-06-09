@@ -723,7 +723,7 @@ c ... vel
 c      
  2000 continue
       print*,'loading vel'
-      call coord(ia(i_vel_darcy),nnodev,ndm,nin)
+      call forces(ia(i_vel_darcy),nnodev,ndm,nin)
       print*,'done.'
       go to 100                   
 c ......................................................................
