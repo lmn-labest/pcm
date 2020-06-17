@@ -823,8 +823,8 @@ c **********************************************************************
       logical flag
 c ......................................................................
       if(.not. flag) then
-        do  50 j = 1, numel
-          read(nin,*) k,(ix(m,k),m=1,nen),ix(nen1,k)
+        do  50 j = 1, numel          
+           read(nin,*,err=200) k,(ix(m,k),m=1,nen),ix(nen1,k)
    50   continue
         call readmacro(nin,.true.)
         write(string,'(12a)') (word(j),j=1,12)  
@@ -856,7 +856,9 @@ c ......................................................................
       endif
 c ......................................................................
   200 continue
-      print*,'*** Erro na leitura dos elementos !',k,j
+      print*,'*** Erro na leitura dos elementos !'
+      print*,'Numero do elemento           :',k
+      print*,'Numero da posicao do elemento:', j
       stop                   
       end
 c **********************************************************************

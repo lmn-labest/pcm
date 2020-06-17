@@ -201,7 +201,7 @@ c ......................................................................
       istep   =  0
       t       =  0.d0
       dt      =  1.d0
-      alfa    =  1.d0
+      alfa    =  1.0d0
       beta    =  1.d0
 c ...
       neq    = 0
@@ -1358,7 +1358,17 @@ c ...
       ilib   = 1
       i      = 1
       istep  = istep + 1
+      t      = t + dt
       resid0 = 0.d0
+c .....................................................................
+c
+c ...
+      write(*,'(a,i8,a,f15.1,a,f15.5,a,f15.5)')
+     1                                  ,' STEP '      ,istep
+     2                                  ,' Time(s)'    ,t
+     3                                  ,' Time(hours)',t/3600.d0
+     4                                  ,' Time(days)' ,t/86400.d0
+      write(nout_nonlinear,'(a,i9,e13.6)')'step',istep,t
 c .....................................................................
 c
 c ... Cargas nodais e valores prescritos no tempo t+dt:
