@@ -1606,7 +1606,7 @@ c **********************************************************************
       include 'time.fi'
 c ... MPI
       integer neqf1i,neqf2i
-c ... ponteiros  
+c ... ponteiros
       integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
       logical novlp
 c ...

@@ -759,14 +759,16 @@ c ...
 c ......................................................................
 c
       if(pc .eq. 1 ) then
-        call sqmr(neq    ,nequ   ,nad    ,ia    ,ja
-     1           ,ad     ,al     ,al     ,m     ,b   ,x 
-     2           ,c      ,h      ,r      ,s 
-     3           ,tol   ,maxit
-     4           ,matvec_csrc_sym_pm,dot_par
-     5           ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
-     6           ,i_xfi ,i_rcvsi,i_dspli
-     7           ,.true.,.true. ,fhist_log,.true.)
+        print*,"SQMR não implementado!"      
+        stop
+c       call sqmr(neq    ,nequ   ,nad    ,ia    ,ja
+c    1           ,ad     ,al     ,al     ,m     ,b   ,x 
+c    2           ,c      ,h      ,r      ,s 
+c    3           ,tol   ,maxit
+c    4           ,matvec_csrc_sym_pm,dot_par
+c    5           ,my_id ,neqf1i ,neqf2i,neq_doti,i_fmapi
+c    6           ,i_xfi ,i_rcvsi,i_dspli
+c    7           ,.true.,.true. ,fhist_log,.true.)
 c .....................................................................
 c
 c ...

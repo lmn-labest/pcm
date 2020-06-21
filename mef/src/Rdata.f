@@ -1395,7 +1395,7 @@ c ...       numero de parcelas:
             enddo     
 c .....................................................................
 c
-c ... velocidade de darcy nulo
+c ... velocidade de darcy nula
          elseif (ty .eq. 9) then  
 c .....................................................................
 c

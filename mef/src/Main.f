@@ -290,7 +290,6 @@ c                4 (bicgstab)  , 5 (block_pcg_it), 6 (bicgstabl2)
 c                7 (minres)    , 8 (pcr)         , 9 (symmlq)
 c               10 (pardiso)   ,11 (sqmr)
 c ... stge    =  1 (csr), 2 (edges), 3 (ebe), 4 (skyline), 6 (csr3)
-      unsym    = .false.
       solver   =  11
       stge     =  1
 c ... Matriz blocada 
@@ -729,8 +728,8 @@ c ...  Memoria para o precondicionador diagonal:
 c .....................................................................
 c
 c ...  Memoria para o precondicionador iLDLt e iLLT (cholesky)
-      neq_max = max(neq+nad,neq_tr+nadr_tr)
       else if( precond .eq. 3 .or.  precond .eq. 4) then
+        neq_max = max(neq+nad,neq_tr+nadr_tr)
         i_m   = alloc_8('m       ',    1,neq_max)
         call azero(ia(i_m),neq_max)
 c ..................................................................... 

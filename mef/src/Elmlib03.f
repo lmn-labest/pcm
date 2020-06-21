@@ -22,7 +22,7 @@ c **********************************************************************
      .                    ,block_pu)
 c **********************************************************************
 c * Data de criacao    : 26/11/2019                                    *
-c * Data de modificaco : 21/05/2020                                    * 
+c * Data de modificaco : 21/06/2020                                    * 
 c * ------------------------------------------------------------------ *       
 c * ELMT12_PM: Elemento hexaedricos de 20 nos para problemas           *  
 c * poromecanico elasticos                                             *
@@ -106,12 +106,12 @@ c ...
       real*8 e(*),x(ndm,*)
 c ...
       real*8 l_c
-      real*8 perm,a,b,c,ym,ps
+      real*8 perm,a,b,c,ym
       real*8 fluid_d,dt_perm,pm_d
-      real*8 dt_fluid,dt_fluid_perm,lambda,mi
+      real*8 dt_fluid,lambda,mi
       real*8 imod_biot,coef_biot
       real*8 fluid_sw
-      real*8 a1,a2,a3,tmp
+      real*8 tmp
 c ...
       real*8 scale
       parameter (scale = 1.d-06)
@@ -137,7 +137,6 @@ c ......................................................................
 c
 c ... matriz constitutiva:
       ym       = e(1)
-      ps       = e(2)
 c ......................................................................
 c
 c ... 
@@ -151,19 +150,9 @@ c ......................................................................
 c
 c ... 
       dt_perm  = perm*dt
-      dt_fluid_perm = fluid_d*dt_perm
 c ......................................................................
 c
 c ...
-      a1       = 1.d0 - ps
-      a2       = 1.d0 - 2.d0*ps
-      a3       = 1.d0 + ps
-c ......................................................................
-c
-c ...
-c     a        = (ym*a1)/(a3*a2)
-c     b        = ps/a1
-c     c        = 0.5d0*(a2/a1) 
       a        = ym
       b        = 0.d0
       c        = 0.d0
@@ -171,15 +160,7 @@ c .....................................................................
 c
 c ...
       if(isw .eq. 2 .or. isw .eq. 3 .or. isw .eq. 4 .or. isw .eq. 8)then
-        det = 0.d0
-        do i = 1, ndm
-          det = det + (x(i,2)-x(i,1))*(x(i,2)-x(i,1))
-        enddo   
-        if (det .le. 0.d0) then 
-          print*,'*** Subrotina ELMT: determinante <= 0 ',nel
-          stop
-        endif      
-        det = 0.5d0*dsqrt(det)
+        call jacob1d(x,det,ndm,nel) 
       endif
 c .....................................................................     
 c

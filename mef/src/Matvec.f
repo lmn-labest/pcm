@@ -381,16 +381,10 @@ c ......................................................................
 c **********************************************************************
 c
 c **********************************************************************
-      subroutine matvec_csrc_sym_pm(neq      ,dum0  ,ia
-     1                             ,ja       ,dum1  ,dum2
-     2                             ,ad       ,dum3  ,al
-     3                             ,x        ,y   
-     4                             ,neqf1i   ,neqf2i
-     5                             ,i_fmapi  ,i_xfi ,i_rcvsi
-     6                             ,i_dspli  ,dum4)
+      subroutine matvec_csrc_sym_pm(neq, ia, ja, ad, al, x, y)
 c **********************************************************************
 c * Data de criacao    : 00/00/0000                                    *
-c * Data de modificaco : 15/12/2016                                    *
+c * Data de modificaco : 17/06/2020                                    *
 c * ------------------------------------------------------------------ * 
 c * MATVEC_CSRC_SYM_PM: produto matriz-vetor y = Ax  (A simetrica),    *
 c *                   coef. de A no formato CSRC.                      *
@@ -407,12 +401,6 @@ c * al(nad)- parte triangular inferior de A, no formato CSR, ou        *
 c *          parte triangular superior de A, no formato CSC            *
 c * x(neq) - vetor a ser multiplicado                                  *
 c * y(neq) - nao definido                                              *
-c * neqf1i - numero de equacoes no buffer de recebimento (MPI)         *
-c * neqf2i - numero de equacoes no buffer de envio (MPI)               *
-c * i_fmapi- ponteiro para o mapa de comunicacao  (MPI)                *
-c * i_xfi  - ponteiro para o buffer de valores    (MPI)                *
-c * i_rcvsi- ponteiro extrutura da comunicacao    (MPI)                *
-c * i_dspli- ponteiro extrutura da comunicacao    (MPI)                *
 c * ------------------------------------------------------------------ *
 c * Parametros de saida:                                               *
 c * ------------------------------------------------------------------ *
@@ -424,12 +412,8 @@ c **********************************************************************
       implicit none
       include 'time.fi'
       integer*8 ia(*),k
-      integer neq,ja(*),dum0,dum1,dum2,dum3,i,jak
+      integer neq,ja(*),i,jak
       real*8  ad(*),al(*),x(*),y(*),s,t,xi
-      real*8 dum4
-      integer neqf1i,neqf2i
-c ... ponteiros      
-      integer*8 i_fmapi,i_xfi,i_rcvsi,i_dspli
 c ......................................................................
       time0 = get_time()
 c
